@@ -14,6 +14,9 @@
 #     along with exactcolors.  If not, see <http://www.gnu.org/licenses/>.
 
 
+export QSOPT_HOME=/Users/fbleile/Bachelorarbeit/exactcolors/qsopt
+
+
 # exactcolors requires one of the following 3 LP solvers: Gurobi, Cplex, or QSopt.
 # Please set the environment path and uncomment the lines correspondingly.
 # You might also need to adopt the  LPINCLUDE & LPLIB  paths further below.
@@ -60,7 +63,6 @@ export CC=gcc
 export LD=gcc
 
 
-
 #
 # Valgrind does not support fegetround & fesetround. With following compile option
 # their use is circumvented. We also recommend to use QSopt as the LP-solver while
@@ -80,7 +82,7 @@ SEWELL_LIB=$(SEWELL_DIR)/libsewell.a
 
 EXACTCOLOR_DIR=.
 EXACTCOLOR_LDFLAG=-L$(EXACTCOLOR_DIR) -lexactcolor $(LPLIB)  -ldl -lm -lpthread
-EXACTCOLOR_LIB= $(EXACTCOLOR_DIR)/libexactcolor.a 
+EXACTCOLOR_LIB= $(EXACTCOLOR_DIR)/libexactcolor.a
 
 CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Wshadow -W -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith -Wnested-externs -Wundef -Wcast-qual -Wcast-align -Wwrite-strings -I$(LPINCLUDE)
 export CFLAGS
@@ -129,10 +131,10 @@ libexactcolor.a: $(OBJFILES)
 	$(AR) rcs libexactcolor.a $(OBJFILES)
 
 color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker
-	$(LD)  $(CFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)  
+	$(LD)  $(CFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
 color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES)
-	$(CC) $(CFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) 
+	$(CC) $(CFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
 color_jobkiller:  $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CKILLERFILES)
 	$(CC) $(CFLAGS) -o color_jobkiller $(CKILLERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
