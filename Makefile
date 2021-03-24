@@ -62,6 +62,8 @@ export CC=gcc
 
 export LD=gcc
 
+export CXX=g++
+
 
 #
 # Valgrind does not support fegetround & fesetround. With following compile option
@@ -87,6 +89,8 @@ EXACTCOLOR_LIB= $(EXACTCOLOR_DIR)/libexactcolor.a
 CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Wshadow -W -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith -Wnested-externs -Wundef -Wcast-qual -Wcast-align -Wwrite-strings -I$(LPINCLUDE)
 export CFLAGS
 
+CXXFLAGS += -std=c++11 -I$(EXACTCOLOR_DIR)
+
 # UBSAN
 ifeq ($(USE_UBSAN), 1)
 	CFLAGS += -fsanitize=undefined -fsanitize=float-divide-by-zero
@@ -110,6 +114,8 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	export CC=ccc-analyzer
 	scan-build -v -o clang make -j
 
+testmmt:
+	./mmt test/instances/myciel4.col  |grep LB > test/mmt.con
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con
@@ -157,6 +163,9 @@ complement: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(COMPFILES)
 dsatur: dsatur.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
 	$(LD) $(CFLAGS) -o dsatur dsatur.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
+mmt: mmt.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
+	$(CXX) $(CXXFLAGS) -o mmt mmt.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+
 queen: queen.c
 	$(CC) $(CFLAGS) -o queen queen.c -lm -lpthread
 
@@ -196,6 +205,7 @@ greedy.o:    greedy.c  color.h graph.h color_defs.h
 lpgurobi.o:  lpgurobi.c color.h lp.h color_defs.h
 lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
+mmt.o:			 mmt.cpp
 mwis.o:      mwis.c mwis.h color.h color_defs.h
 mwis_grdy.o: mwis_grdy.c color.h graph.h color_defs.h heap.h
 mwis_grb.o:  mwis_grb.c color.h lp.h color_defs.h
