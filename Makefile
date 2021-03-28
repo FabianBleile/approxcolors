@@ -115,7 +115,7 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	scan-build -v -o clang make -j
 
 testmmt:
-	./mmt test/instances/myciel4.col  |grep LB > test/mmt.con
+	./mmt test/instances/myciel4.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con
@@ -163,8 +163,8 @@ complement: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(COMPFILES)
 dsatur: dsatur.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
 	$(LD) $(CFLAGS) -o dsatur dsatur.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
-mmt: mmt.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
-	$(CXX) $(CXXFLAGS) -o mmt mmt.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+mmt: mmt.o mmt_read.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
+	$(CXX) $(CXXFLAGS) -o mmt mmt.o mmt_read.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
 queen: queen.c
 	$(CC) $(CFLAGS) -o queen queen.c -lm -lpthread
@@ -206,6 +206,9 @@ lpgurobi.o:  lpgurobi.c color.h lp.h color_defs.h
 lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
 mmt.o:			 mmt.cpp
+	$(CXX) $(CXXFLAGS) -c -o mmt.o mmt.cpp
+mmt_read.o:	 mmt_read.c graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
+	$(LD) $(CFLAGS) -c -o mmt_read.o mmt_read.c graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 mwis.o:      mwis.c mwis.h color.h color_defs.h
 mwis_grdy.o: mwis_grdy.c color.h graph.h color_defs.h heap.h
 mwis_grb.o:  mwis_grb.c color.h lp.h color_defs.h
