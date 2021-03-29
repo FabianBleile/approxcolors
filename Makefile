@@ -115,7 +115,7 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	scan-build -v -o clang make -j
 
 testmmt:
-	./mmt test/instances/myciel4.col
+	./mmt test/instances/queen8_8.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con

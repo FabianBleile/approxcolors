@@ -196,14 +196,13 @@ public:
   void toString(int maxLines = 10) {
     std::cout << "MMTPartialColoring.toString() of " << this << '\n';
     std::vector<std::unordered_set<nodeid> > * stableSets = getStableSets();
-    for (const auto &set : *stableSets) {
+    for (auto it = stableSets->begin(); it != stableSets->end(); it++) {
       if(maxLines == 0) {
         std::cout << "\t..." << '\n';
         return;
       }
-      for (const auto& u : set) {
-        std::cout << u << ' ';
-      }
+      std::cout << std::distance(stableSets->begin(), it) << " : ";
+      for (const auto& u : *it) std::cout << u << ' ';
       std::cout << '\n';
       maxLines--;
     }
@@ -229,7 +228,6 @@ private:
   }
 
   void setColor(nodeid u, color c){
-    std::cout << "color " << u << " in color " << c << '\n';
     if(c == k) uncolored.insert(u);
     else uncolored.erase(u);
     colors[u] = c;
@@ -261,9 +259,19 @@ int main(int argc, char **av) {
 
   g.toString();
 
-  MMTPartialColoring pc(5, &g, m, n);
-  pc.tabuSearch();
-  pc.toString();
+  int GOAL = 12;
+
+  MMTPartialColoring tbs(GOAL, &g, 3000, 100);
+  tbs.tabuSearch();
+  tbs.toString(GOAL+1);
+
+  MMTPartialColoring seq(GOAL, &g, 3000, 100);
+  seq.greedy();
+  seq.toString(GOAL+1);
+
+  MMTPartialColoring dsatur(GOAL, &g, 3000, 100);
+  dsatur.dsatur();
+  dsatur.toString(GOAL+1);
 
   return 0;
 }
