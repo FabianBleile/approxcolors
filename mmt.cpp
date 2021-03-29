@@ -9,43 +9,50 @@ extern "C" {
 #include <algorithm>
 #include <numeric>
 #include <utility>
+#include <random>
+#include <map>
+#include <queue>
+
+using nodeid = uint32_t;
+using color = uint32_t;
+using measure = int;
 
 class MMTGraph {
 public:
   const int n, m;
 
-  MMTGraph(const int pncount, const int pecount, int **pelist) : n(pncount), m(pecount), adjList(pncount,std::unordered_set<int>()) {
+  MMTGraph(const int pncount, const int pecount, int **pelist) : n(pncount), m(pecount), adjList(pncount,std::unordered_set<nodeid>()) {
     for (size_t i = 0; i < pecount; i++) {
-      this->adjList[(*pelist)[2*i]].insert((*pelist)[2*i + 1]);
-      this->adjList[(*pelist)[2*i + 1]].insert((*pelist)[2*i]);
+      adjList[(*pelist)[2*i]].insert((*pelist)[2*i + 1]);
+      adjList[(*pelist)[2*i + 1]].insert((*pelist)[2*i]);
     }
   }
 
-  bool isAdj(const int u, const int v) const {
+  bool isAdj(const nodeid u, const nodeid v) const {
     assert(u != v && isValid(u) && isValid(v));
-    return this->adjList[u].find(v) != this->adjList[u].end();
+    return adjList[u].find(v) != adjList[u].end();
   }
 
-  const std::unordered_set<int>* getNeighbors(const int u) const {
+  const std::unordered_set<nodeid>* getNeighbors(const nodeid u) const {
     assert(isValid(u));
-    return &this->adjList[u];
+    return &adjList[u];
   }
 
-  int getDegree(const int u) const {
+  int getDegree(const nodeid u) const {
     assert(isValid(u));
     return adjList[u].size();
   }
 
   void toString(int maxLines = 5, bool real = true) const {
     std::cout << "MMTGraph.toString() of " << this << '\n';
-    assert(this->n != 0 && this->m != 0);
-    std::cout << "n = " << this->n << " : m = " << this->m << '\n';
-    for (auto u = 0; u < this->n; u++) {
+    assert(n != 0 && m != 0);
+    std::cout << "n = " << n << " : m = " << m << '\n';
+    for (auto u = 0; u < n; u++) {
       if(maxLines == 0) {
         std::cout << "\t..." << '\n';
         return;
       }
-      for (auto &v : this->adjList[u]) {
+      for (auto &v : adjList[u]) {
         if (real || u < v) {
            std::cout << u << " " << v << '\t';
         }
@@ -55,58 +62,95 @@ public:
     }
   }
 private:
-  std::vector<std::unordered_set<int> > adjList;
+  std::vector<std::unordered_set<nodeid> > adjList;
 
-  bool isValid(const int u) const {
-    return u >= 0 && u < this->n;
+  bool isValid(const nodeid u) const {
+    return u >= 0 && u < n;
   }
 };
 
 
-// maintains k stable sets and one more which stores all uncolored nodes
 class MMTPartialColoring {
 public:
   // empty constructor
-  MMTPartialColoring(const int k, const MMTGraph * igraph) : k(k), colors(), graph(igraph) {
+  MMTPartialColoring(const int k, const MMTGraph * igraph, int L, int T) : k(k), colors(), graph(igraph), L(L), T(T) {
     assert(k!=0);
     assert(igraph != NULL);
     // generate ascending seq of nodes
-    std::vector<int> rand_vect(graph->n);
-    std::iota(rand_vect.begin(), rand_vect.end(), 0);
+    std::vector<nodeid> v(graph->n);
+    std::iota(v.begin(), v.end(), 0);
     // insert nodes in (k+1)-st bucket
-    for (const auto &u : rand_vect) this->colors.emplace(u, k);
-
+    for (const auto &u : v) setColor(u, k);
   }
+
+  void tabuSearch(){
+    assert(L>0 && T>0);
+    std::queue<std::unordered_set<std::pair<nodeid, color>, UInt32PairHash>::iterator > tabuQueue;
+    std::unordered_set<std::pair<nodeid, color>, UInt32PairHash> tabuList;
+
+    for (size_t i = 0; i < L; i++) {
+      if (uncolored.empty()) break;
+      // randomly select an uncolored vertex v in V_(k+1)
+      std::vector<nodeid> rand_uncolored_node;
+      rand_uncolored_node.insert(rand_uncolored_node.begin(), uncolored.begin(), uncolored.end());
+      std::shuffle(rand_uncolored_node.begin(), rand_uncolored_node.end(), std::default_random_engine());
+
+      nodeid u = rand_uncolored_node[0];
+
+      //explore neighborhood
+      std::vector<int> costs(k+1, -graph->getDegree(u));
+      const std::unordered_set<nodeid>* u_neighbors = graph->getNeighbors(u);
+      for (const auto &v : *u_neighbors) costs[colors[v]] += graph->getDegree(v);
+      color h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+      assert(isValidColor(h));
+      if (costs[h] >= 0 && tabuList.find(std::make_pair(u, h)) != tabuList.end()) {
+        auto it = costs.begin();
+        std::generate(costs.begin(), costs.end(), [&] () mutable {
+          if (tabuList.find(std::make_pair(u, h)) != tabuList.end()) { // is tabu
+            it++;
+            return std::numeric_limits<int>::max();
+          } else {
+            return *it++;
+          }
+        });
+        color temp_h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+        if (costs[temp_h] < std::numeric_limits<int>::max()) h = temp_h;
+      }
+      tabuQueue.push(tabuList.insert(std::make_pair(u, h)).first);
+      if (i >= T) {
+        tabuList.erase(tabuQueue.front());
+        tabuQueue.pop();
+      }
+      moveToColor(u, h);
+    }
+  }
+
   // clear (k+1)-st bucket in a greedy way
   void greedy() {
     // SEQ
-    // randomized insertion might not affect hashing in unordered_map ... idk(?)
-    // generate random seq of nodes
-    std::vector<int> rand_vect(graph->n);
-    std::iota(rand_vect.begin(), rand_vect.end(), 0);
-    std::random_shuffle(rand_vect.begin(), rand_vect.end());
-    for (const auto &u : rand_vect) this->colors[u] = findMinAvailableColor(u);
+    std::vector<nodeid> v(uncolored.begin(), uncolored.end());
+    std::shuffle(v.begin(), v.end(), std::default_random_engine());
+    for (const auto &u : v) setColor(u, findMinAvailableColor(u));
   }
   // clear (k+1)-st bucket in a dsatur way
   void dsatur(){
     // compute initial degrees in G
-    std::vector<std::pair<int, int> > deg_dsatur(this->graph->n); // degU, degDsatur
+    std::vector<std::pair<int, int> > deg_dsatur(graph->n); // degU, degDsatur
     int u = 0;
-    std::generate(deg_dsatur.begin(), deg_dsatur.end(), [&] () mutable { return std::make_pair(this->graph->getDegree(u++), 0); });
-    int max_node;
-    for (size_t i = 0; i < this->graph->n; i++) {
+    std::generate(deg_dsatur.begin(), deg_dsatur.end(), [&] () mutable { return std::make_pair(graph->getDegree(u++), 0); });
+    for (nodeid i = 0; i < graph->n; i++) {
       // compute random node with max degree in G from all nodes with max saturation
-      max_node = dsatur_selectMaxNode(deg_dsatur);
+      nodeid u = dsatur_selectMaxNode(deg_dsatur);
       // color max_node with the lowest available color
-      this->colors[max_node] = findMinAvailableColor(max_node);
+      setColor(u, findMinAvailableColor(u));
       // update degrees in G and C
-      dsatur_updateSatDeg(max_node, deg_dsatur);
+      dsatur_updateSatDeg(u, deg_dsatur);
     }
   }
 
   int dsatur_selectMaxNode(std::vector<std::pair<int, int> >& degs) const {
-    std::vector<int> v = {0};
-    for (size_t i = 1; i < this->graph->n; i++) {
+    std::vector<nodeid> v = {0};
+    for (size_t i = 1; i < graph->n; i++) {
       if(degs[v[0]].second < degs[i].second || (degs[v[0]].second == degs[i].second && degs[v[0]].first < degs[i].first)) {
         v.clear();
         v.push_back(i);
@@ -114,12 +158,12 @@ public:
         v.push_back(i);
       }
     }
-    std::random_shuffle(v.begin(), v.end());
+    std::shuffle(v.begin(), v.end(), std::default_random_engine());
     return v[0];
   }
 
-  void dsatur_updateSatDeg(int u, std::vector<std::pair<int, int> >& degs){
-    const std::unordered_set<int> * u_neighbors = this->graph->getNeighbors(u);
+  void dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs){
+    const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
     for (const auto &v : *u_neighbors) {
       if (degs[v].second != -1) {
         degs[v].first--; // remove from G (uncolored Graph)
@@ -129,20 +173,20 @@ public:
     degs[u].second = -1;
   }
 
-  int findMinAvailableColor(int u) {
-    const std::unordered_set<int> * u_neighbors = this->graph->getNeighbors(u);
+  int findMinAvailableColor(nodeid u) {
+    const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
     std::vector<bool> colorIsAvailable(k+1,true);
     for (const auto &v : *u_neighbors) {
-      assert(isValidColor(this->colors[v]));
-      colorIsAvailable[this->colors[v]] = false;
+      assert(isValidColor(colors[v]));
+      colorIsAvailable[colors[v]] = false;
     }
-    for (size_t i = 0; i < this->k; i++) { if (colorIsAvailable[i]) return i; }
-    return this->k;
+    for (size_t i = 0; i < k; i++) { if (colorIsAvailable[i]) return i; }
+    return k;
   }
 
-  std::vector<std::unordered_set<int> >* getStableSets() {
-    std::vector<std::unordered_set<int> > * stableSets = new std::vector<std::unordered_set<int> >(k+1, std::unordered_set<int>());
-    for (const auto &kvp : this->colors) {
+  std::vector<std::unordered_set<nodeid> >* getStableSets() {
+    std::vector<std::unordered_set<nodeid> > * stableSets = new std::vector<std::unordered_set<nodeid> >(k+1, std::unordered_set<nodeid>());
+    for (const auto &kvp : colors) {
       assert(isValidColor(kvp.second));
       stableSets->operator[](kvp.second).emplace(kvp.first);
     }
@@ -151,7 +195,7 @@ public:
 
   void toString(int maxLines = 10) {
     std::cout << "MMTPartialColoring.toString() of " << this << '\n';
-    std::vector<std::unordered_set<int> > * stableSets = getStableSets();
+    std::vector<std::unordered_set<nodeid> > * stableSets = getStableSets();
     for (const auto &set : *stableSets) {
       if(maxLines == 0) {
         std::cout << "\t..." << '\n';
@@ -167,12 +211,45 @@ public:
 
 private:
   const int k;
-  std::unordered_map<int,int> colors;
+  const int L, T;
+  std::unordered_map<nodeid,color> colors;
+  std::unordered_set<nodeid> uncolored;
   const MMTGraph * graph;
 
-  bool isValidColor(int value) const {
-    return value >= 0 && value < this->k + 1;
+  measure evaluate() const {
+    measure cost = 0;
+    for (const auto & u : uncolored) {
+      cost += graph->getDegree(u);
+    }
+    return cost;
   }
+
+  bool isValidColor(color value) const {
+    return value >= 0 && value < k + 1;
+  }
+
+  void setColor(nodeid u, color c){
+    std::cout << "color " << u << " in color " << c << '\n';
+    if(c == k) uncolored.insert(u);
+    else uncolored.erase(u);
+    colors[u] = c;
+  }
+
+  void moveToColor(nodeid u, color c) {
+    const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+    for (const auto &v : *u_neighbors) if (colors[v] == c) colors[v] = k;
+    uncolored.erase(u);
+    colors[u] = c;
+  }
+
+  struct UInt32PairHash {
+    std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const {
+      assert(sizeof(std::size_t)>=8);  //Ensure that std::size_t, the type of the hash, is large enough
+      //Shift first integer over to make room for the second integer. The two are
+      //then packed side by side.
+      return (((uint64_t)p.first)<<32) | ((uint64_t)p.second);
+    }
+  };
 };
 
 int main(int argc, char **av) {
@@ -184,9 +261,8 @@ int main(int argc, char **av) {
 
   g.toString();
 
-  MMTPartialColoring pc(5, &g);
-
-  pc.greedy();
+  MMTPartialColoring pc(5, &g, m, n);
+  pc.tabuSearch();
   pc.toString();
 
   return 0;
