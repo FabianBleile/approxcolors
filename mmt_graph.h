@@ -1,6 +1,10 @@
 #ifndef MMT_GRAPH_H_
 #define MMT_GRAPH_H_
 
+extern "C" {
+  #include "mmt_read.h"
+}
+
 #include <iostream>
 #include <vector>
 #include <unordered_set>
@@ -9,9 +13,9 @@ using nodeid = uint32_t;
 
 class MMTGraph {
 public:
-  const int n, m;
+  int n, m;
 
-  MMTGraph(const int pncount, const int pecount, int **pelist) ;
+  MMTGraph(int argc, char **av) ;
 
   bool isAdj(const nodeid u, const nodeid v) const ;
 

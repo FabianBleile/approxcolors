@@ -1,16 +1,9 @@
-extern "C" {
-  #include "mmt_read.h"
-}
-
 #include "mmt_graph.h"
 #include "mmt_partial_coloring.h"
 
 int main(int argc, char **av) {
-  int n = 0, m = 0;
-  int *elist;
-  read_graph(argc, av, &n, &m, &elist);
 
-  MMTGraph g(n, m, &elist);
+  MMTGraph g(argc, av);
 
   g.toString();
 

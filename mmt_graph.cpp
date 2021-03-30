@@ -1,9 +1,14 @@
 #include "mmt_graph.h"
 
-MMTGraph::MMTGraph(const int pncount, const int pecount, int **pelist) : n(pncount), m(pecount), adjList(pncount,std::unordered_set<nodeid>()) {
-  for (size_t i = 0; i < pecount; i++) {
-    adjList[(*pelist)[2*i]].insert((*pelist)[2*i + 1]);
-    adjList[(*pelist)[2*i + 1]].insert((*pelist)[2*i]);
+MMTGraph::MMTGraph(int argc, char **av) {
+  int *elist;
+  read_graph(argc, av, &n, &m, &elist);
+
+  adjList = std::vector<std::unordered_set<nodeid> >(n,std::unordered_set<nodeid>());
+
+  for (size_t i = 0; i < m; i++) {
+    adjList[(elist)[2*i]].insert((elist)[2*i + 1]);
+    adjList[(elist)[2*i + 1]].insert((elist)[2*i]);
   }
 }
 
