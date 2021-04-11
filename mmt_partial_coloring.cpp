@@ -1,7 +1,7 @@
 #include "mmt_partial_coloring.h"
 
 // empty constructor
-MMTPartialColoring::MMTPartialColoring(const int k, const MMTGraph * igraph, int L, int T) : k(k), colors(), graph(igraph), L(L), T(T) {
+MMTPartialColoring::MMTPartialColoring(const int k, MMTGraph * igraph, int L, int T) : k(k), colors(), graph(igraph), L(L), T(T) {
   assert(k!=0);
   assert(igraph != NULL);
   // generate ascending seq of nodes
@@ -11,10 +11,13 @@ MMTPartialColoring::MMTPartialColoring(const int k, const MMTGraph * igraph, int
   for (const auto &u : v) setColor(u, k);
 }
 
-void MMTPartialColoring::crossover(const MMTPartialColoring* S1, const MMTPartialColoring* S2){
+bool MMTPartialColoring::crossover(MMTPartialColoring* S1, MMTPartialColoring* S2){
   assert(color_classes.size() == 0);
   assert(this->k == S1->k && this->k == S2->k);
   assert(this->graph == S1->graph && this->graph == S2->graph);
+
+  S1->lockColoring();
+  S2->lockColoring();
 
   // generate vectors with size of each color class for both parents
   std::vector<int> s1_c(k), s2_c(k);
@@ -24,20 +27,20 @@ void MMTPartialColoring::crossover(const MMTPartialColoring* S1, const MMTPartia
   std::generate(s2_c.begin(), s2_c.end(), [&] () mutable { return it != S2->color_classes.end() ? (*it++).size() : 0; });
 
   // init number of colored nodes from Parents not colored in child coloring
-  int s1_n = std::accumulate(s1_c.begin(), s1_c.end(), 0);
-  int s2_n = std::accumulate(s2_c.begin(), s2_c.end(), 0);
+  int* s1_n = new int(std::accumulate(s1_c.begin(), s1_c.end(), 0));
+  int* s2_n = new int(std::accumulate(s2_c.begin(), s2_c.end(), 0));
 
   // init currentColor
   color cur_color = 0;
 
   // iterate until all color classes of child have been populated
   // or there are no more colored nodes in parents which havn't already been colored in childs coloring
-  while (cur_color < k && s1_n + s2_n > 0) {
+  while (cur_color < k && *s1_n + *s2_n > 0) {
 
     // SelectParent() :
     // A[0,1,2] containing pointer to graph coloring Si, vect si_c, int si_n for chosen parent
     // A[3,4,5] accordingly the other
-    auto A = selectParent(S1, S2, &s1_c, &s2_c, &s1_n, &s2_n, cur_color);
+    auto A = selectParent(S1, S2, &s1_c, &s2_c, s1_n, s2_n, cur_color);
 
     // select parent color with the greatest remaining size
     color h = std::distance(std::get<1>(A)->begin(), std::max_element(std::get<1>(A)->begin(), std::get<1>(A)->end()));
@@ -51,12 +54,13 @@ void MMTPartialColoring::crossover(const MMTPartialColoring* S1, const MMTPartia
       if (this->colors[u] == this->k) {
         this->colors[u] = cur_color;
         (*std::get<1>(A))[h]--;     // lower color class size of parent
-        std::get<2>(A)--;           // lower total sum of nodes color in parent coloring but not in child coloring
+        #pragma GCC diagnostic ignored "-Wunused-value"
+        (*std::get<2>(A))--;           // lower total sum of nodes color in parent coloring but not in child coloring
         try {
           color u_col_non_parent = std::get<3>(A)->colors.at(u);
           if (u_col_non_parent < k) {
             (*std::get<4>(A))[u_col_non_parent]--;     // lower color class size of non parent
-            std::get<5>(A)--;                                   // lower total sum of nodes color in non parent coloring but not in child coloring
+            (*std::get<5>(A))--;                                   // lower total sum of nodes color in non parent coloring but not in child coloring
           }
         } catch (std::out_of_range e) {
           assert(true == false);    // just don't jump in here please :D
@@ -70,75 +74,107 @@ void MMTPartialColoring::crossover(const MMTPartialColoring* S1, const MMTPartia
     // move to next color
     cur_color++;
   }
-
-  tabuSearch();
+  return evaluate() == 0;
 }
 
 std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialColoring*, std::vector<int>*, int* > MMTPartialColoring::selectParent(const MMTPartialColoring* s1, const MMTPartialColoring* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color){
-  if ( ( *s1_n > 0 && *s2_n > 0 && cur_color % 2 ) || *s1_n > 0) {
+
+  if ( ( *s1_n > 0 && *s2_n > 0 && !(cur_color % 2) ) || *s2_n == 0) {
     return std::make_tuple(s1, s1_c, s1_n, s2, s2_c, s2_n);
   } else {
     return std::make_tuple(s2, s2_c, s2_n, s1, s1_c, s1_n);
   }
 }
 
-void MMTPartialColoring::tabuSearch(){
+// Mutation
+bool MMTPartialColoring::tabuSearch(){
   assert(L>0 && T>0);
   assert(color_classes.size() == 0);
-  std::queue<std::unordered_set<std::pair<nodeid, color>, UInt32PairHash>::iterator > tabuQueue;
+  std::queue<std::pair<nodeid, color> > tabuQueue;
   std::unordered_set<std::pair<nodeid, color>, UInt32PairHash> tabuList;
 
   for (size_t i = 0; i < L; i++) {
+    // solution discovered ? if yes break and return
     if (uncolored.empty()) break;
+
+    /*
+      rudimentary random node getter
+    */
     // randomly select an uncolored vertex v in V_(k+1)
     std::vector<nodeid> rand_uncolored_node;
     rand_uncolored_node.insert(rand_uncolored_node.begin(), uncolored.begin(), uncolored.end());
-    std::shuffle(rand_uncolored_node.begin(), rand_uncolored_node.end(), std::default_random_engine());
-
+    // obtain a time-based seed:
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(rand_uncolored_node.begin(), rand_uncolored_node.end(), std::default_random_engine(seed));
+    // choose u from random vect
     nodeid u = rand_uncolored_node[0];
 
-    //explore neighborhood
-    std::vector<int> costs(k+1, -graph->getDegree(u));
-    const std::unordered_set<nodeid>* u_neighbors = graph->getNeighbors(u);
-    for (const auto &v : *u_neighbors) costs[colors[v]] += graph->getDegree(v);
-    color h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-    assert(isValidColor(h));
-    if (costs[h] >= 0 && tabuList.find(std::make_pair(u, h)) != tabuList.end()) {
-      auto it = costs.begin();
-      std::generate(costs.begin(), costs.end(), [&] () mutable {
-        if (tabuList.find(std::make_pair(u, h)) != tabuList.end()) { // is tabu
+    // color u with first available color if possible
+    // in case it is the new solution has better fitness for any function I considered by now
+    // so we can just add u to that color and continue tabu search with a next random uncolored node
+    setColor(u, findMinAvailableColor(u));
+    color h = colors[u];
+
+    // h = k iff there is no free color available for u
+    // assert for every neighbor j is f(S_j) >= f(S*)
+    if (h == k) {
+      //explore neighborhood for every color 0 to k-1
+      std::vector<int> costs(k, -graph->getDegree(u));
+      for (const auto &v : *graph->getNeighbors(u)) if(colors[v] != k) costs[colors[v]] += graph->getDegree(v);
+      h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+
+      // If (node, color) is tabu then search for best not tabu color
+      if (tabuList.find(std::make_pair(u, h)) != tabuList.end()) {
+        auto it = costs.begin() - 1;
+        std::generate(costs.begin(), costs.end(), [&] () mutable {
           it++;
-          return std::numeric_limits<int>::max();
-        } else {
-          return *it++;
+          if (tabuList.find(std::make_pair(u, h)) != tabuList.end()) { // is tabu
+            return std::numeric_limits<int>::max();
+          } else {
+            return *it;
+          }
+        });
+        color temp_h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+
+        // is any color not tabu ? if yes update target color
+        // else proceed with previously calculated tabued color
+        if (costs[temp_h] < std::numeric_limits<int>::max()) {
+          h = temp_h;
         }
-      });
-      color temp_h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-      if (costs[temp_h] < std::numeric_limits<int>::max()) h = temp_h;
+      }
+
+      assert(h < k); // at this point we want to add u to a color (color h is the set of all uncolored vertices)
+      moveToColor(u, h);
     }
-    tabuQueue.push(tabuList.insert(std::make_pair(u, h)).first);
+
+    // std::cout << "(node, color) : " << u << " , " << h << '\n';
+
+    tabuList.insert(std::make_pair(u, h));
+    tabuQueue.push(std::make_pair(u, h));
+
     if (i >= T) {
       tabuList.erase(tabuQueue.front());
       tabuQueue.pop();
     }
-    moveToColor(u, h);
   }
 
-  lockColoring();
+  return evaluate() == 0;
 }
 
 // clear (k+1)-st bucket in a greedy way
-void MMTPartialColoring::greedy() {
+bool MMTPartialColoring::greedy() {
   assert(color_classes.size() == 0);
   // SEQ
   std::vector<nodeid> v(uncolored.begin(), uncolored.end());
-  std::shuffle(v.begin(), v.end(), std::default_random_engine());
+  // obtain a time-based seed:
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
   for (const auto &u : v) setColor(u, findMinAvailableColor(u));
 
-  tabuSearch();
+  return evaluate() == 0;
 }
 // clear (k+1)-st bucket in a dsatur way
-void MMTPartialColoring::dsatur(){
+bool MMTPartialColoring::dsatur(){
   assert(color_classes.size() == 0);
   // compute initial degrees in G
   std::vector<std::pair<int, int> > deg_dsatur(graph->n); // degU, degDsatur
@@ -152,8 +188,7 @@ void MMTPartialColoring::dsatur(){
     // update degrees in G and C
     dsatur_updateSatDeg(u, deg_dsatur);
   }
-
-  tabuSearch();
+  return evaluate() == 0;
 }
 
 int MMTPartialColoring::dsatur_selectMaxNode(std::vector<std::pair<int, int> >& degs) const {
@@ -166,7 +201,9 @@ int MMTPartialColoring::dsatur_selectMaxNode(std::vector<std::pair<int, int> >& 
       v.push_back(i);
     }
   }
-  std::shuffle(v.begin(), v.end(), std::default_random_engine());
+  // obtain a time-based seed:
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
   return v[0];
 }
 
@@ -195,11 +232,16 @@ int MMTPartialColoring::findMinAvailableColor(nodeid u) {
 void MMTPartialColoring::toString(int maxLines) const {
   std::cout << "MMTPartialColoring.toString() of " << this << '\n';
 
+  if (this->uncolored.empty()) {
+    std::cout << "successfully colored with " << k << " colors." << '\n';
+  }
+
   for (size_t i = 0; i < k+1; i++) {
     if(maxLines == 0) {
       std::cout << "\t..." << '\n';
       return;
     }
+    std::cout << "( color " << i << " )" << ':';
     for (const auto &kvp : colors) if (kvp.second == i) std::cout << kvp.first << ' ';
     std::cout << '\n';
     maxLines--;
@@ -226,12 +268,14 @@ void MMTPartialColoring::setColor(nodeid u, color c){
 
 void MMTPartialColoring::moveToColor(nodeid u, color c) {
   const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
-  for (const auto &v : *u_neighbors) if (colors[v] == c) colors[v] = k;
-  uncolored.erase(u);
-  colors[u] = c;
+  for (const auto &v : *u_neighbors) {
+    if (colors[v] == c) setColor(v, k);
+  }
+  setColor(u,c);
 }
 
 void MMTPartialColoring::lockColoring(){
+  if (color_classes.size() != 0) return;
   color_classes = std::vector<std::unordered_set<nodeid> >(k, std::unordered_set<nodeid>());
   for (const auto& kvp : colors) {
     if (kvp.second < k) color_classes[kvp.second].insert(kvp.first);

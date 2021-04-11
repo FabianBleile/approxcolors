@@ -23,40 +23,40 @@ using measure = int;
 class MMTPartialColoring {
 public:
   // empty constructor
-  MMTPartialColoring(const int k, const MMTGraph * igraph, int L, int T);
+  MMTPartialColoring(const int k, MMTGraph * igraph, int L, int T);
 
-  void crossover(const MMTPartialColoring* S1, const MMTPartialColoring* S2);
+  bool crossover(MMTPartialColoring* S1, MMTPartialColoring* S2);
 
-  void tabuSearch();
+  bool tabuSearch();
 
-  void greedy();
+  bool greedy();
 
-  void dsatur();
+  bool dsatur();
 
-  void toString(int maxLines = 10) const ;
+  void lockColoring() ;
 
-private:
-  const int k;
+  measure evaluate() const ;
 
-  const MMTGraph * graph;
-
-  const int L, T;
-
-  std::unordered_map<nodeid,color> colors;
+  void toString(int maxLines = 7) const ;
 
   std::unordered_set<nodeid> uncolored;
 
-  std::vector<std::unordered_set<nodeid> > color_classes;
+private:
+  int k;
 
-  measure evaluate() const ;
+  MMTGraph * graph;
+
+  int L, T;
+
+  std::unordered_map<nodeid,color> colors;
+
+  std::vector<std::unordered_set<nodeid> > color_classes;
 
   bool isValidColor(color value) const ;
 
   void setColor(nodeid u, color c) ;
 
   void moveToColor(nodeid u, color c) ;
-
-  void lockColoring() ;
 
   std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialColoring*, std::vector<int>*, int* > selectParent(const MMTPartialColoring* s1, const MMTPartialColoring* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color);
 
