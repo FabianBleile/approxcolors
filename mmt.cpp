@@ -7,7 +7,7 @@
 
 class MMT {
 public:
-  MMT(int argc, char **av, int L, int T, int time_limit_sec, int pool_size = 99) : graph(argc,av), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3), cur_best_coloring(MMTPartialColoring(graph.n, &graph, L, T)) {
+  MMT(int argc, char **av, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5) : graph(argc,av), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3), cur_best_coloring(MMTPartialColoring(graph.n, &graph, L, T)), pGreedy(pGreedy) {
     // compute lower bound
     // compute upper bound
     UB = graph.n + 1;
@@ -66,6 +66,7 @@ public:
       std::shuffle(pool.begin(), pool.end(), std::default_random_engine(seed));
 
       MMTPartialColoring crossover_child(UB-1, &graph, L, T);
+      // generate offspring and if it is not already a solution improve by calling tabuSearch on it
       if(crossover_child.crossover(&pool[0], &pool[1]) || crossover_child.tabuSearch()) {
         cur_best_coloring = crossover_child;
         return;
@@ -73,11 +74,16 @@ public:
 
       /*
 
-        priority greedy needs to be called here
-        not implemented yet
+      priority greedy needs to be called here
+      not implemented yet
+
+        crossover_child similar to a solution in the pool? trigger priorityGreedy
+        offspring is considered similar to another partial coloring if each
+        fitness and #uncolered vertices are equal
 
       */
-      std::cout << crossover_child.evaluate() << '\n';
+
+      printf("%d,\t", crossover_child.evaluate());
       // for (const auto & u : crossover_child.uncolored) {
       //   std::cout << u << '\t';
       // }
@@ -100,6 +106,7 @@ private:
   MMTGraph graph;
   int UB, LB;
   MMTPartialColoring cur_best_coloring;
+  double pGreedy;
 };
 
 int main(int argc, char **av) {
