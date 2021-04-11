@@ -114,7 +114,10 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	export CC=ccc-analyzer
 	scan-build -v -o clang make -j
 
-testmmt:
+testmmtciel:
+	./mmt test/instances/myciel4.col
+
+testmmtqueen:
 	./mmt test/instances/queen8_8.col
 
 testmyciel4:
@@ -205,7 +208,7 @@ greedy.o:    greedy.c  color.h graph.h color_defs.h
 lpgurobi.o:  lpgurobi.c color.h lp.h color_defs.h
 lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
-mmt.o:			 mmt.cpp mmt_graph.h
+mmt.o:			 mmt.cpp mmt_graph.h mmt_partial_coloring.h
 	$(CXX) $(CXXFLAGS) -c -o mmt.o mmt.cpp
 mmt_graph.o: mmt_graph.cpp mmt_graph.h mmt_partial_coloring.h
 	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o mmt_graph.cpp
