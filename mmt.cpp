@@ -49,7 +49,7 @@ public:
 
     // priority vector : for every vertex keeps track of the total number this
     //                   vertex is left uncolored in the current pool
-    std::vector<int> priority(graph.n, pool_size);
+    std::vector<int> priority(graph.n, -pool_size);
 
     // pool : stores the current partial colorings
     //        init default pool with empty partial solutions
@@ -83,6 +83,7 @@ public:
     }
 
     clock_t t = clock();
+    size_t iter = 0;
     while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec) {
       unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
       std::shuffle(pool.begin(), pool.end(), std::default_random_engine(seed));
@@ -90,7 +91,6 @@ public:
       MMTPartialColoring offspring(UB-1, &graph, L, T);
       // generate offspring and if it is not already a solution improve by calling tabuSearch on it
       if(offspring.crossover(&pool[0], &pool[1]) || offspring.tabuSearch()) return offspring;
-
       /*
 
         offspring similar to a solution in the pool?
@@ -101,7 +101,8 @@ public:
       */
       if (poolSimilarity.find(std::make_pair(offspring.uncolored.size(), offspring.evaluate())) != poolSimilarity.end()) {
         // there is a similar individual in the pool
-        srand( (unsigned)time( NULL ) );
+        // srand( (unsigned)time( NULL ) );
+
         if ((float) rand()/RAND_MAX < pGreedy) {
           // drop offspring and generate new partial coloring with priorityGreedy()
           offspring = MMTPartialColoring(UB-1, &graph, L, T);
@@ -110,7 +111,7 @@ public:
           std::vector<int> temp_prio = priority;
           for (size_t i = 0; i < temp_prio.size() - 1; i++) {
             if ((float) rand()/RAND_MAX < priority_noise) {
-              std::swap(temp_prio[i], temp_prio[i+1]);
+              std::swap(temp_prio.at(i), temp_prio.at(i+1));
             }
           }
 
@@ -118,17 +119,15 @@ public:
         }
       }
 
-      poolSimilarity.insert(std::make_pair(offspring.uncolored.size(), offspring.evaluate()));
-
-      // printf("%d,\t", offspring.evaluate());
-
       // delete worst parent and insert child to pool
       if (pool[0].evaluate() <= pool[1].evaluate()) {
-        pool[1] = offspring;
+        updatePool(offspring, pool[1], pool, poolSimilarity, priority);
       } else {
-        pool[0] = offspring;
+        updatePool(offspring, pool[0], pool, poolSimilarity, priority);
       }
+      iter++;
     }
+
     return cur_best_coloring;
   }
 
@@ -158,7 +157,7 @@ private:
     poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
 
     // update priority
-    for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
+    for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
 
     // update pool
     pool.push_back(new_individual);
@@ -169,9 +168,9 @@ private:
     poolSimilarity.erase(std::make_pair(old_individual.uncolored.size(), old_individual.evaluate()));
     poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
 
-    // update priority
-    for (const auto & uncol_v : old_individual.uncolored) priority[uncol_v]++;
-    for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
+    // update
+    for (const auto & uncol_v : old_individual.uncolored) priority[uncol_v]--;
+    for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
 
     // update pool
     old_individual = new_individual;
@@ -180,7 +179,7 @@ private:
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 100, /*time limit*/ 60, /*pool size*/ 99);
+  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 100, /*time limit*/ 20, /*pool size*/ 99, 0.1);
 
   mmt.EAOptimizer();
   // mmt.testing();
