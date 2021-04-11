@@ -173,6 +173,25 @@ bool MMTPartialColoring::greedy() {
 
   return evaluate() == 0;
 }
+
+// clear (k+1)-st bucket in a greedy way
+bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
+  assert(color_classes.size() == 0);
+
+  // generate ascending seq of nodes
+  std::vector<nodeid> nodes_v(graph->n);
+  std::iota(nodes_v.begin(), nodes_v.end(), 0);
+
+  std::sort(nodes_v.begin(), nodes_v.end(), [&](const nodeid & left, const nodeid & right) -> bool {
+    return priority_v[left] >= priority_v[right];
+  });
+
+  for (const auto &u : nodes_v) setColor(u, findMinAvailableColor(u));
+
+  return evaluate() == 0;
+}
+
+
 // clear (k+1)-st bucket in a dsatur way
 bool MMTPartialColoring::dsatur(){
   assert(color_classes.size() == 0);

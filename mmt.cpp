@@ -4,6 +4,7 @@
 #include <time.h>
 #include <vector>
 #include <utility>
+#include <queue>
 
 class MMT {
 public:
@@ -32,7 +33,7 @@ public:
   void EAOptimizer() {
     clock_t t = clock();
     while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec && UB > LB) {
-      EADecision(UB);
+      cur_best_coloring = EADecision(UB);
       cur_best_coloring.toString();
       UB--;
     }
@@ -40,35 +41,45 @@ public:
     UB == LB ? std::cout << "YAAY in " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n' : std::cout << "no we timed out :o" << '\n';
   }
 
-  void EADecision(int UB) {
-    // poolSimilarity collects properties for every individual in the pool
-    // on which basis two individuals are considered similar
-    // ( #unclored vertices , fitness )
+  MMTPartialColoring EADecision(int UB) {
+    // poolSimilarity : collects properties for every individual in the pool
+    //                  on which basis two individuals are considered similar
+    //                  ( #unclored vertices , fitness )
     std::unordered_set<std::pair<int, measure>, UInt32PairHash> poolSimilarity;
 
-    // init default pool with empty partial solutions
-    std::vector<MMTPartialColoring> pool(pool_size, MMTPartialColoring(UB-1, &graph, L, T));
+    // priority vector : for every vertex keeps track of the total number this
+    //                   vertex is left uncolored in the current pool
+    std::vector<int> priority(graph.n, pool_size);
+
+    // pool : stores the current partial colorings
+    //        init default pool with empty partial solutions
+    std::vector<MMTPartialColoring> pool;
+
     // apply different initialization algorithms on the pool
     // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
-    for (size_t i = 0; i < pool_size - 2; ) {
-      if(pool[i].greedy() || pool[i].tabuSearch()) {
-        cur_best_coloring = pool[i];
-        return;
-      }
-      poolSimilarity.insert(std::make_pair(pool[i].uncolored.size(), pool[i].evaluate()));
-      i++;
-      if(pool[i].dsatur() || pool[i].tabuSearch()) {
-        cur_best_coloring = pool[i];
-        return;
-      }
-      poolSimilarity.insert(std::make_pair(pool[i].uncolored.size(), pool[i].evaluate()));
-      i++;
-      if(pool[i].tabuSearch()) {
-        cur_best_coloring = pool[i];
-        return;
-      }
-      poolSimilarity.insert(std::make_pair(pool[i].uncolored.size(), pool[i].evaluate()));
-      i++;
+
+    // SEQ Block
+    int seq_block_size = pool_size/3;
+    for (size_t i = 0; i < seq_block_size; i++) {
+      MMTPartialColoring seq = MMTPartialColoring(UB-1, &graph, L, T);
+      if(seq.greedy() || seq.tabuSearch()) return seq;
+      insertPool(seq, pool, poolSimilarity, priority);
+    }
+
+    // DSATUR Block
+    int dsatur_block_size = pool_size/3;
+    for (size_t i = 0; i < dsatur_block_size; i++) {
+      MMTPartialColoring dsatur = MMTPartialColoring(UB-1, &graph, L, T);
+      if(dsatur.dsatur() || dsatur.tabuSearch()) return dsatur;
+      insertPool(dsatur, pool, poolSimilarity, priority);
+    }
+
+    // TABU SEARCH Block
+    int tabusearch_block_size = pool_size - seq_block_size - dsatur_block_size;
+    for (size_t i = 0; i < tabusearch_block_size; i++) {
+      MMTPartialColoring tabusearch = MMTPartialColoring(UB-1, &graph, L, T);
+      if(tabusearch.tabuSearch()) return tabusearch;
+      insertPool(tabusearch, pool, poolSimilarity, priority);
     }
 
     clock_t t = clock();
@@ -78,27 +89,39 @@ public:
 
       MMTPartialColoring offspring(UB-1, &graph, L, T);
       // generate offspring and if it is not already a solution improve by calling tabuSearch on it
-      if(offspring.crossover(&pool[0], &pool[1]) || offspring.tabuSearch()) {
-        cur_best_coloring = offspring;
-        return;
-      }
+      if(offspring.crossover(&pool[0], &pool[1]) || offspring.tabuSearch()) return offspring;
 
       /*
 
-      priority greedy needs to be called here
-      not implemented yet
-
-        offspring similar to a solution in the pool? trigger priorityGreedy
-        offspring is considered similar to another partial coloring if each
-        fitness and #uncolered vertices are equal
+        offspring similar to a solution in the pool?
+        if yes then trigger priorityGreedy with probability pGreedy
+        (offspring is considered similar to another partial coloring if each
+        fitness and #uncolered vertices are equal)
 
       */
+      if (poolSimilarity.find(std::make_pair(offspring.uncolored.size(), offspring.evaluate())) != poolSimilarity.end()) {
+        // there is a similar individual in the pool
+        srand( (unsigned)time( NULL ) );
+        if ((float) rand()/RAND_MAX < pGreedy) {
+          // drop offspring and generate new partial coloring with priorityGreedy()
+          offspring = MMTPartialColoring(UB-1, &graph, L, T);
 
-      printf("%d,\t", offspring.evaluate());
-      // for (const auto & u : offspring.uncolored) {
-      //   std::cout << u << '\t';
-      // }
-      // std::cout << '\n';
+          // copy priority vector and add little noise
+          std::vector<int> temp_prio = priority;
+          for (size_t i = 0; i < temp_prio.size() - 1; i++) {
+            if ((float) rand()/RAND_MAX < priority_noise) {
+              std::swap(temp_prio[i], temp_prio[i+1]);
+            }
+          }
+
+          if(offspring.priorityGreedy(temp_prio) || offspring.tabuSearch()) return offspring;
+        }
+      }
+
+      poolSimilarity.insert(std::make_pair(offspring.uncolored.size(), offspring.evaluate()));
+
+      // printf("%d,\t", offspring.evaluate());
+
       // delete worst parent and insert child to pool
       if (pool[0].evaluate() <= pool[1].evaluate()) {
         pool[1] = offspring;
@@ -106,6 +129,7 @@ public:
         pool[0] = offspring;
       }
     }
+    return cur_best_coloring;
   }
 
   MMTPartialColoring* getColoring(){
@@ -118,6 +142,7 @@ private:
   int UB, LB;
   MMTPartialColoring cur_best_coloring;
   double pGreedy;
+  const double priority_noise = 0.5;
 
   struct UInt32PairHash {
     std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const {
@@ -127,6 +152,30 @@ private:
         return (((uint64_t)p.first)<<32) | ((uint64_t)p.second);
     }
   };
+
+  void insertPool(const MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
+    // update poolSimilarity
+    poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
+
+    // update priority
+    for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
+
+    // update pool
+    pool.push_back(new_individual);
+  }
+
+  void updatePool(const MMTPartialColoring& new_individual, MMTPartialColoring& old_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
+    // update poolSimilarity
+    poolSimilarity.erase(std::make_pair(old_individual.uncolored.size(), old_individual.evaluate()));
+    poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
+
+    // update priority
+    for (const auto & uncol_v : old_individual.uncolored) priority[uncol_v]++;
+    for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
+
+    // update pool
+    old_individual = new_individual;
+  }
 };
 
 int main(int argc, char **av) {

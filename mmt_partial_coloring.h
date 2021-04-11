@@ -31,6 +31,8 @@ public:
 
   bool greedy();
 
+  bool priorityGreedy(const std::vector<int>& v);
+
   bool dsatur();
 
   void lockColoring() ;
