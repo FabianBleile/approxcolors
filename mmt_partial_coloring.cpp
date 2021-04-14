@@ -93,21 +93,25 @@ bool MMTPartialColoring::tabuSearch(){
   std::queue<std::pair<nodeid, color> > tabuQueue;
   std::unordered_set<std::pair<nodeid, color>, UInt32PairHash> tabuList;
 
+  std::pair<MMTPartialColoring, measure > local_best = std::make_pair(*this, evaluate());
+
   for (size_t i = 0; i < L; i++) {
     // solution discovered ? if yes break and return
     if (uncolored.empty()) break;
 
     /*
       rudimentary random node getter
+      // randomly select an uncolored vertex v in V_(k+1)
+      std::vector<nodeid> rand_uncolored_node;
+      rand_uncolored_node.insert(rand_uncolored_node.begin(), uncolored.begin(), uncolored.end());
+      // obtain a time-based seed:
+      unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+      std::shuffle(rand_uncolored_node.begin(), rand_uncolored_node.end(), std::default_random_engine(seed));
     */
-    // randomly select an uncolored vertex v in V_(k+1)
-    std::vector<nodeid> rand_uncolored_node;
-    rand_uncolored_node.insert(rand_uncolored_node.begin(), uncolored.begin(), uncolored.end());
-    // obtain a time-based seed:
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::shuffle(rand_uncolored_node.begin(), rand_uncolored_node.end(), std::default_random_engine(seed));
     // choose u from random vect
-    nodeid u = rand_uncolored_node[0];
+    assert(uncolored.size() != 0);
+    auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
+    nodeid u = *random_it;
 
     // color u with first available color if possible
     // in case it is the new solution has better fitness for any function I considered by now
@@ -156,6 +160,14 @@ bool MMTPartialColoring::tabuSearch(){
       tabuList.erase(tabuQueue.front());
       tabuQueue.pop();
     }
+
+    /*
+    measure cur_fitness = evaluate();
+    if (cur_fitness < local_best.second) {
+      if (cur_fitness == 0) return true;
+      local_best = std::make_pair(*this, cur_fitness);
+    }
+    */
   }
 
   return evaluate() == 0;
@@ -270,7 +282,8 @@ void MMTPartialColoring::toString(int maxLines) const {
 measure MMTPartialColoring::evaluate() const {
   measure cost = 0;
   for (const auto & u : uncolored) {
-    cost += graph->getDegree(u);
+    int deg = graph->getDegree(u);
+    cost += deg < k ? 0 : deg;
   }
   return cost;
 }
