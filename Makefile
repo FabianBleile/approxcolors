@@ -89,7 +89,7 @@ EXACTCOLOR_LIB= $(EXACTCOLOR_DIR)/libexactcolor.a
 CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Wshadow -W -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith -Wnested-externs -Wundef -Wcast-qual -Wcast-align -Wwrite-strings -I$(LPINCLUDE)
 export CFLAGS
 
-CXXFLAGS += -std=c++11 -I$(EXACTCOLOR_DIR)
+CXXFLAGS += -std=c++11 -O3 -I$(EXACTCOLOR_DIR)
 
 # UBSAN
 ifeq ($(USE_UBSAN), 1)
@@ -115,10 +115,13 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	scan-build -v -o clang make -j
 
 testmmtciel:
-	./mmt test/instances/myciel4.col
+	./mmt test/instances/myciel7.col
 
 testmmtqueen:
-	./mmt test/instances/queen8_8.col
+	./mmt test/instances/queen10_10.col
+
+testmmtdsj:
+	./mmt test/instances/DSJC250.9.col.b
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con

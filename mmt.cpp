@@ -11,9 +11,8 @@ public:
   MMT(int argc, char **av, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5) : graph(argc,av), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3), cur_best_coloring(MMTPartialColoring(graph.n, &graph, L, T)), pGreedy(pGreedy) {
     // compute lower bound
     // compute upper bound
-    // UB = graph.n + 1;
-    UB = 10;
-    LB = 9;
+    UB = 14;
+    LB = 11;
   }
 
   void testing(){
@@ -35,10 +34,16 @@ public:
     while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec && UB > LB) {
       cur_best_coloring = EADecision(UB);
       cur_best_coloring.toString();
+      if (UB == LB) {
+        std::cout << "YAAY in " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
+        return;
+      }
       UB--;
     }
-    std::cout << "solution found ? " << '\t';
-    UB == LB ? std::cout << "YAAY in " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n' : std::cout << "no we timed out :o" << '\n';
+
+    std::cout << "timed out after " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
+
+    cur_best_coloring.toString();
   }
 
   MMTPartialColoring EADecision(int UB) {
@@ -99,6 +104,7 @@ public:
         fitness and #uncolered vertices are equal)
 
       */
+
       if (poolSimilarity.find(std::make_pair(offspring.uncolored.size(), offspring.evaluate())) != poolSimilarity.end()) {
         // there is a similar individual in the pool
         // srand( (unsigned)time( NULL ) );
@@ -179,7 +185,7 @@ private:
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 100, /*time limit*/ 20, /*pool size*/ 99, 0.1);
+  MMT mmt(argc, av, /*L*/ 100,/*T*/ 10, /*time limit*/ 30, /*pool size*/ 50, 0.1);
 
   mmt.EAOptimizer();
   // mmt.testing();
