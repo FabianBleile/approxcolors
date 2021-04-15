@@ -160,14 +160,6 @@ bool MMTPartialColoring::tabuSearch(){
       tabuList.erase(tabuQueue.front());
       tabuQueue.pop();
     }
-
-    /*
-    measure cur_fitness = evaluate();
-    if (cur_fitness < local_best.second) {
-      if (cur_fitness == 0) return true;
-      local_best = std::make_pair(*this, cur_fitness);
-    }
-    */
   }
 
   return evaluate() == 0;
@@ -197,6 +189,13 @@ bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
   std::sort(nodes_v.begin(), nodes_v.end(), [&](const nodeid & left, const nodeid & right) -> bool {
     return priority_v.at(left) < priority_v.at(right);
   });
+
+  // copy priority vector and add little noise
+  for (size_t i = 0; i < nodes_v.size() - 1; i++) {
+    if ((float) rand()/RAND_MAX < 0.5) {
+      std::swap(nodes_v.at(i), nodes_v.at(i+1));
+    }
+  }
 
   for (const auto &u : nodes_v) setColor(u, findMinAvailableColor(u));
 
