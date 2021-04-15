@@ -65,6 +65,11 @@ int COLORlp_addcol (COLORlp *p, int nzcount, int *rind, double *rval,
                     double obj, double lb, double ub, char vartype, char *name);
 
 int COLORlp_deletecols (COLORlp *p, int first_cind, int last_cind);
+int COLORlp_get_column (COLORlp *p, int colidx, int * colcntidx, int ** colindidx);
+
+int COLORlp_deleterow (COLORlp *p, int colidx);
+int COLORlp_deleterows (COLORlp *p, int num, int *dellist);
+int COLORlp_get_rowcount (COLORlp *p);
 
 int COLORlp_set_all_coltypes (COLORlp *p, char sense);
 

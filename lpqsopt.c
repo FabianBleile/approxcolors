@@ -194,12 +194,56 @@ int COLORlp_deletecols (COLORlp *p, int first_cind, int last_cind)
       dellist[i] = first_cind + i;
    }
 
-   rval = QSdelete_cols (p->p, numdel,dellist);
+   rval = QSdelete_cols (p->p, numdel, dellist);
    COLORcheck_rval (rval, "QSdelete_col failed");
 
 CLEANUP:
    if (dellist) free(dellist);
    return rval;
+}
+
+int COLORlp_deleterow (COLORlp *p, int rowidx)
+{
+  int rval;
+  rval = QSdelete_row (p->p, rowidx);
+  if (rval) {
+    fprintf (stderr, "QSdelete_row failed with return code %d\n", rval);
+  }
+  return rval;
+}
+
+int COLORlp_deleterows (COLORlp *p, int num, int *dellist) {
+  int rval;
+  rval = QSdelete_rows (p->p, num, dellist);
+  if (rval) {
+    fprintf (stderr, "QSdelete_rows failed with return code %d\n", rval);
+  }
+  return rval;
+}
+
+
+int COLORlp_get_rowcount (COLORlp *p)
+{
+  int nrows;
+  nrows = QSget_rowcount (p->p);
+  printf ("Number of constraints: %d\n", nrows);
+  return nrows;
+}
+
+
+int COLORlp_get_column (COLORlp *p, int colidx, int * colcntidx, int ** colindidx) {
+  int *colcnt = NULL, *colind = NULL;
+  int collist[1] = { colidx };
+  int rval;
+  rval = QSget_columns_list (p->p, 1, collist, &colcnt, (int **) NULL, &colind,
+              (double **) NULL, (double **) NULL, (double **) NULL, (double **) NULL, (char ***) NULL);
+
+
+  *colcntidx = colcnt[0];
+  *colindidx = colind;
+
+  QSfree (colcnt); QSfree (colind);
+  return rval;
 }
 
 
