@@ -43,6 +43,8 @@ public:
 
   std::unordered_set<nodeid> uncolored;
 
+  std::vector<std::unordered_set<nodeid> > color_classes;
+
 private:
   int k;
 
@@ -51,8 +53,6 @@ private:
   int L, T;
 
   std::unordered_map<nodeid,color> colors;
-
-  std::vector<std::unordered_set<nodeid> > color_classes;
 
   bool isValidColor(color value) const ;
 
