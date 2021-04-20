@@ -28,8 +28,6 @@ static void usage (char *f);
 int read_graph(int ac, char **av, int *pncount, int *pecount, int **pelist)
 {
       int rval = 0;
-      double start_time = COLORcpu_time();
-      double tot_rtime;
 
       COLORproblem colorproblem;
       COLORparms *parms = &(colorproblem.parms);

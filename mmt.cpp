@@ -31,7 +31,12 @@ public:
 
   void start(){
     PHASE1_EAOptimizer();
-    PHASE2_ColumnOptimization();
+    if(UB != LB) {
+      PHASE2_ColumnOptimization();
+    } else {
+      cur_best_coloring.greedy();
+    }
+    cur_best_coloring.toString();
   }
 
   void PHASE1_EAOptimizer() {
@@ -45,12 +50,6 @@ public:
       }
       UB--;
     }
-
-    cur_best_coloring.greedy();
-
-    std::cout << "timed out after " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
-
-    cur_best_coloring.toString();
   }
 
   MMTPartialColoring EADecision(int UB) {
