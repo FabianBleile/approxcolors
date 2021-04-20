@@ -70,7 +70,12 @@ export CXX=g++
 # their use is circumvented. We also recommend to use QSopt as the LP-solver while
 # debugging with valgrind, as the commercial solvers impose valgrind errors internally.
 #
+# CALLGRIND :
+# 	valgrind --tool=callgrind ./mmt test/instances/queen13_13.col
+#		quick inspect on https://www.speedscope.app/
+#
 #CFLAGS+= -DCOMPILE_FOR_VALGRIND
+CXXFLAGS += -g
 
 
 
@@ -191,6 +196,8 @@ clean:
 	rm -rf clang
 	rm -f libexactcolor
 	rm -f test/*.con
+	rm -rf callgrind*
+	rm -rf mmt.dSYM*
 	cd $(SEWELL_DIR) && $(MAKE) clean
 
 SRCFILES=bbsafe.c color_backup.c  color.h color_parms.c  graph.c   heap.c     lpgurobi.c  mwis.c       mwis.h                  mwis_sewell/mwss_ext.h  partition.c  queen.c        test_boss.c    util.c bbsafe.h     color.c         color_jobkiller.c  color_parms.h    color_worker.c   graph.h   heap.h     lp.h        mwis_grb.c   mwis_sewell/mwss.c      mwis_sewell/mwss.h      plotting.c   stable.c       test_tell.c cliq_enum.c  color_defs.h    color_main.c       color_private.h  complement.c     greedy.c  lpcplex.c  lpqsopt.c   mwis_grdy.c  mwis_sewell/mwss_ext.c  mwis_sewell/wstable.c   plotting.h   stable_grdy.c  test_worker.c
