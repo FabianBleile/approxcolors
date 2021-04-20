@@ -15,6 +15,7 @@ extern "C" {
 
 class MMT {
 public:
+
   MMT(int argc, char **av, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
    : graph(argc,av), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
    cur_best_coloring(MMTPartialColoring(graph.n, &graph, L, T)), pGreedy(pGreedy), N(graph.n)
@@ -22,37 +23,43 @@ public:
    {
     // compute lower bound
     // compute upper bound
-    UB = 15;
-    LB = 13;
+    logger.UB = 15;
+    logger.LB = 13;
     measure_best_solution = N*N;
 
     std::cout << "N = " << N << '\n';
   }
 
   void start(){
+    clock_t totRuntime = clock();
     PHASE1_EAOptimizer();
-    if(UB != LB) {
+    if(logger.UB != logger.LB) {
       PHASE2_ColumnOptimization();
     } else {
       cur_best_coloring.greedy();
     }
     cur_best_coloring.toString();
+    logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
   }
 
   void PHASE1_EAOptimizer() {
     clock_t t = clock();
-    while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec && UB > LB) {
-      cur_best_coloring = EADecision(UB);
+    while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec && logger.UB > logger.LB) {
+      t = clock();
+      cur_best_coloring = EADecision(logger.UB);
+      logger.lastItTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
       cur_best_coloring.toString();
-      if (UB == LB) {
+      if (logger.UB == logger.LB) {
         std::cout << "YAAY in " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
         return;
       }
-      UB--;
+      logger.UB--;
     }
   }
 
   MMTPartialColoring EADecision(int UB) {
+    // reset lastItNumOffsprings
+    logger.lastItNumOffsprings = 0;
     // poolSimilarity : collects properties for every individual in the pool
     //                  on which basis two individuals are considered similar
     //                  ( #unclored vertices , fitness )
@@ -72,24 +79,33 @@ public:
     // SEQ Block
     int seq_block_size = pool_size/3;
     for (size_t i = 0; i < seq_block_size; i++) {
-      MMTPartialColoring seq = MMTPartialColoring(UB-1, &graph, L, T);
-      if(seq.greedy() || seq.tabuSearch()) return seq;
+      MMTPartialColoring seq = MMTPartialColoring(logger.UB-1, &graph, L, T);
+      if(seq.greedy() || seq.tabuSearch()) {
+        logger.status = INIT_GREEDY;
+        return seq;
+      }
       insertPool(seq, pool, poolSimilarity, priority);
     }
 
     // DSATUR Block
     int dsatur_block_size = pool_size/3;
     for (size_t i = 0; i < dsatur_block_size; i++) {
-      MMTPartialColoring dsatur = MMTPartialColoring(UB-1, &graph, L, T);
-      if(dsatur.dsatur() || dsatur.tabuSearch()) return dsatur;
+      MMTPartialColoring dsatur = MMTPartialColoring(logger.UB-1, &graph, L, T);
+      if(dsatur.dsatur() || dsatur.tabuSearch()) {
+        logger.status = INIT_DSATUR;
+        return dsatur;
+      }
       insertPool(dsatur, pool, poolSimilarity, priority);
     }
 
     // TABU SEARCH Block
     int tabusearch_block_size = pool_size - seq_block_size - dsatur_block_size;
     for (size_t i = 0; i < tabusearch_block_size; i++) {
-      MMTPartialColoring tabusearch = MMTPartialColoring(UB-1, &graph, L, T);
-      if(tabusearch.tabuSearch()) return tabusearch;
+      MMTPartialColoring tabusearch = MMTPartialColoring(logger.UB-1, &graph, L, T);
+      if(tabusearch.tabuSearch()) {
+        logger.status = INIT_TABU;
+        return tabusearch;
+      }
       insertPool(tabusearch, pool, poolSimilarity, priority);
     }
 
@@ -99,9 +115,12 @@ public:
       unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
       std::shuffle(pool.begin(), pool.end(), std::default_random_engine(seed));
 
-      MMTPartialColoring offspring(UB-1, &graph, L, T);
+      MMTPartialColoring offspring(logger.UB-1, &graph, L, T);
       // generate offspring and if it is not already a solution improve by calling tabuSearch on it
-      if(offspring.crossover(&pool[0], &pool[1]) || offspring.tabuSearch()) return offspring;
+      if(offspring.crossover(&pool[0], &pool[1]) || offspring.tabuSearch()) {
+        logger.status = EA;
+        return offspring;
+      }
       /*
 
         offspring similar to a solution in the pool?
@@ -117,7 +136,7 @@ public:
 
         if ((float) rand()/RAND_MAX < pGreedy) {
           // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(UB-1, &graph, L, T);
+          offspring = MMTPartialColoring(logger.UB-1, &graph, L, T);
 
           if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) return offspring;
         }
@@ -133,6 +152,9 @@ public:
       if (!(iter % 2000)) {
         std::cout << "Anzahl Iterationen " << iter << " mit durchschnittsfitness " << averageFitness(pool) << '\n';
       }
+
+      logger.totNumOffsprings++;
+      logger.lastItNumOffsprings++;
     }
     return cur_best_coloring;
   }
@@ -210,6 +232,10 @@ public:
     }
 
     std::cout << "NUMBER OF COLORS USED : " << cnt << '\n';
+    if (cnt < logger.UB) {
+      logger.status = COl_OPT;
+      // return solution
+    }
   }
 
   MMTPartialColoring* getColoring(){
@@ -217,16 +243,25 @@ public:
   }
 
 private:
-  int L, T, time_limit_sec, pool_size, measure_best_solution;
-  MMTGraph graph;
-  const int N;
-  int UB, LB;
-  MMTPartialColoring cur_best_coloring;
-  double pGreedy;
-  const double priority_noise = 0.5;
 
-  const int numColOpt = 1000;
-  std::queue< std::unordered_set<nodeid> > columns;
+  enum status {
+    UNSOLVED = 1,
+    INIT_GREEDY = 2,
+    INIT_DSATUR = 4,
+    INIT_TABU = 8,
+    EA = 16,
+    COl_OPT = 32
+  };
+
+  struct LogData {
+    status status = UNSOLVED;
+    int totNumOffsprings = 0;
+    int lastItNumOffsprings = 0;
+    int totTimeInSec = 0;
+    int lastItTimeInSec = 0;
+    int UB;
+    int LB = 2;
+  };
 
   struct UInt32PairHash {
     std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const {
@@ -237,12 +272,17 @@ private:
     }
   };
 
-  // Hashing tecnique for stable set hashing
-  // struct NBitStringHash {
-  //   std::size_t operator()(bool[N] nstring) const {
-  //       return (((uint64_t)p.first)<<32) | ((uint64_t)p.second);
-  //   }
-  // };
+  int L, T, time_limit_sec, pool_size, measure_best_solution;
+  MMTGraph graph;
+  const int N;
+  MMTPartialColoring cur_best_coloring;
+  double pGreedy;
+  const double priority_noise = 0.5;
+
+  LogData logger;
+
+  const int numColOpt = 1000;
+  std::queue< std::unordered_set<nodeid> > columns;
 
   void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
     // update poolSimilarity
@@ -299,48 +339,12 @@ private:
   }
 };
 
-void testLP(){
-  COLORlp * lp = (COLORlp *) NULL;
-
-  const int varCount = 5;
-  const int nodeCount = 3;
-
-  int rval = COLORlp_init (&lp, "colorme");
-
-  // add cons
-  for (int i = 0; i < nodeCount; i++) {
-      rval = COLORlp_addrow (lp, 0, (int *) NULL, (double *) NULL, COLORlp_GREATER_EQUAL,
-                             1.0, (char*) NULL);
-  }
-
-  double coeff[nodeCount];
-  std::fill_n(coeff, nodeCount, 1.0);
-  int cind[nodeCount];
-  std::iota(std::begin(cind), std::end(cind), 0);
-
-  for (int i = 0; i < varCount; i++) {
-    // add variable between with objective coeff 1.0 and between 0.0 and 1.0
-    rval = COLORlp_addcol (lp, nodeCount,
-                 cind, coeff,/*obj*/ 1.0,/*lb*/ 0.0,/*ub*/ 1.0,
-                 /*sense*/ COLORlp_CONTINUOUS, (char*) NULL);
-  }
-
-  rval = COLORlp_deletecols (/*COLORlp*/ lp, /*first_cind*/ 2, /*last_cind*/ 2);
-
-  int dellist[2] = {0,2};
-  //rval = COLORlp_deleterows(/*COLORlp*/ lp, /*numdel*/ (int) 2, /*dellist*/ (int **) &dellist);
-
-  rval = COLORlp_write (lp, "mmt_output.txt");
-}
-
 int main(int argc, char **av) {
 
   MMT mmt(argc, av, /*L*/ 500,/*T*/ 100, /*time limit*/ 5, /*pool size*/ 100, 0.1);
 
   mmt.start();
   // mmt.testing();
-
-  // testLP();
 
   return 0;
 }
