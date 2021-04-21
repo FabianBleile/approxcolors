@@ -109,6 +109,38 @@ CLEANUP:
     return rval;
 }
 
+int COLORlp_get_status (COLORlp *p, int *status) {
+  int rval;
+  rval = QSget_status (p->p, status);
+
+  if (rval) {
+    fprintf (stderr, "Unable to obtain status, error code %d\n", rval);
+  } else {
+    switch (*status) {
+      case QS_LP_OPTIMAL:
+        printf ("An optimal solution is available\n");
+        break;
+      case QS_LP_INFEASIBLE:
+        printf ("The LP has no feasible solution\n");
+        break;
+      case QS_LP_UNBOUNDED:
+        printf ("The LP has unbounded objective value\n");
+        break;
+      case QS_LP_UNSOLVED:
+        printf ("The optimization algorithm could not solve the LP\n");
+        break;
+      case QS_LP_MODIFIED:
+        printf ("The LP was modified since last optimization call\n");
+        break;
+      default:
+        printf ("Unknown solution status: %d\n", *status);
+        break;
+    }
+  }
+
+  return rval;
+}
+
 int COLORlp_objval (COLORlp *p, double *obj)
 {
     int rval = 0;

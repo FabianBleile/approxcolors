@@ -50,6 +50,7 @@ void COLORlp_free_env(void);
 #define COLORlp_MAX -1
 
 int COLORlp_optimize (COLORlp *p);
+int COLORlp_get_status (COLORlp *p, int *status);
 int COLORlp_objval (COLORlp *p, double *obj);
 int COLORlp_pi (COLORlp *p, double *pi);
 int COLORlp_x (COLORlp *p, double *x);
