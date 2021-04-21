@@ -12,6 +12,8 @@ extern "C" {
 #include <queue>
 #include <algorithm>
 #include <array>
+#include <fstream>
+#include <sstream>
 
 class MMT {
 public:
@@ -23,15 +25,14 @@ public:
    {
     // compute lower bound
     // compute upper bound
-    logger.UB = 15;
-    logger.LB = 13;
+    logger.UB = N;
     measure_best_solution = N*N;
 
     std::cout << "N = " << N << '\n';
   }
 
   void start(){
-    clock_t totRuntime = clock();
+    clock_t t = clock();
     PHASE1_EAOptimizer();
     if(logger.UB != logger.LB) {
       PHASE2_ColumnOptimization();
@@ -48,13 +49,15 @@ public:
       t = clock();
       cur_best_coloring = EADecision(logger.UB);
       logger.lastItTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
-      cur_best_coloring.toString();
       if (logger.UB == logger.LB) {
         std::cout << "YAAY in " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
         return;
+      } else {
+        std::cout << "UB updated to " << logger.UB << '\n';
       }
       logger.UB--;
     }
+    logger.UB++;
   }
 
   MMTPartialColoring EADecision(int UB) {
@@ -196,14 +199,18 @@ public:
     }
 
 
-    rval = COLORlp_write (lp, "mmt_output.txt");
+    // rval = COLORlp_write (lp, "mmt_output.txt");
 
     int cnt = 0;
     while (COLORlp_get_rowcount (lp) > 0) {
       int rval = COLORlp_optimize(lp);
       // get solution
       double x[varCount];
-      rval = COLORlp_x (lp, x);
+      // solution available?
+      int status = -1;
+      COLORlp_get_status(lp, &status);
+      if(status != 1) return;
+      COLORlp_x (lp, x);
       // retrieve max value
       int argmax = 0;
       for (size_t i = 1; i < varCount; i++)
@@ -215,10 +222,8 @@ public:
       int colcnt;
       rval = COLORlp_get_column(lp, argmax, &colcnt, &colind);
 
-      std::cout << "argmax = " << argmax << " and colcnt = " << colcnt << '\n';
       int temp_colind[colcnt];
       for (size_t i = 0; i < colcnt; i++) {
-        std::cout << colind[i] << '\n';
         temp_colind[i] = colind[i];
       }
 
@@ -232,6 +237,7 @@ public:
     }
 
     std::cout << "NUMBER OF COLORS USED : " << cnt << '\n';
+    logger.colOpt = cnt;
     if (cnt < logger.UB) {
       logger.status = COl_OPT;
       // return solution
@@ -240,6 +246,16 @@ public:
 
   MMTPartialColoring* getColoring(){
     return &cur_best_coloring;
+  }
+
+  std::stringstream streamLogs(){
+    std::stringstream logs;
+    logs << logger.status << ',';
+    logs << logger.totTimeInSec << ',' << logger.lastItTimeInSec << ',';
+    logs << logger.totNumOffsprings << ',' << logger.lastItNumOffsprings << ',';
+    logs << logger.UB << ',' << logger.LB << ',';
+    logs << logger.colOpt;
+    return logs;
   }
 
 private:
@@ -255,12 +271,13 @@ private:
 
   struct LogData {
     status status = UNSOLVED;
-    int totNumOffsprings = 0;
-    int lastItNumOffsprings = 0;
     int totTimeInSec = 0;
     int lastItTimeInSec = 0;
+    int totNumOffsprings = 0;
+    int lastItNumOffsprings = 0;
     int UB;
     int LB = 2;
+    int colOpt = -1;
   };
 
   struct UInt32PairHash {
@@ -339,11 +356,22 @@ private:
   }
 };
 
+void documentation(char *instance, MMT* mmt){
+  char filename[ ] = "mmt_documentation.txt";
+  std::ofstream doc;
+  doc.open (filename, std::fstream::app);
+  doc << instance << ',';
+  doc << mmt->streamLogs().rdbuf() << '\n';
+  doc.close();
+}
+
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 500,/*T*/ 100, /*time limit*/ 5, /*pool size*/ 100, 0.1);
+  MMT mmt(argc, av, /*L*/ 500,/*T*/ 50, /*time limit*/ 30, /*pool size*/ 100, 0.1);
 
   mmt.start();
+
+  documentation(av[1], &mmt);
   // mmt.testing();
 
   return 0;
