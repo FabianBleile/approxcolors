@@ -119,14 +119,14 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	export CC=ccc-analyzer
 	scan-build -v -o clang make -j
 
-testmmtciel:
-	./mmt test/instances/myciel7.col
+testall:
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), echo $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), ./mmt $(file);)
+
+# best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testmmtqueen:
 	./mmt test/instances/queen13_13.col
-
-testmmtdsj:
-	./mmt test/instances/DSJC250.9.col.b
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con
