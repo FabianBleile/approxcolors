@@ -3,6 +3,10 @@
 
 #include "mmt_graph.h"
 
+extern "C" {
+  #include "hungarian.h"
+}
+
 #include <iostream>
 #include <vector>
 #include <unordered_set>
@@ -39,14 +43,19 @@ public:
 
   measure evaluate() const ;
 
+  int distanceTo(MMTPartialColoring* S, bool exact = false) ;
+
+  int getNumColors() const ;
+
   void toString(int maxLines = 7) const ;
 
   std::unordered_set<nodeid> uncolored;
 
   std::vector<std::unordered_set<nodeid> > color_classes;
 
-private:
   int k;
+
+private:
 
   MMTGraph * graph;
 
@@ -67,6 +76,10 @@ private:
   void dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs);
 
   int findMinAvailableColor(nodeid u);
+
+  int approxDistance(std::vector<std::vector<int> >& matIntersec);
+
+  int exactDistance(std::vector<std::vector<int> >& matIntersec);
 
   struct UInt32PairHash {
     std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const ;

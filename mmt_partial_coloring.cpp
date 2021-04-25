@@ -99,29 +99,24 @@ bool MMTPartialColoring::tabuSearch(){
     // solution discovered ? if yes break and return
     if (uncolored.empty()) break;
 
-    /*
-      rudimentary random node getter
-      // randomly select an uncolored vertex v in V_(k+1)
-      std::vector<nodeid> rand_uncolored_node;
-      rand_uncolored_node.insert(rand_uncolored_node.begin(), uncolored.begin(), uncolored.end());
-      // obtain a time-based seed:
-      unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-      std::shuffle(rand_uncolored_node.begin(), rand_uncolored_node.end(), std::default_random_engine(seed));
-    */
     // choose u from random vect
     assert(uncolored.size() != 0);
     auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
     nodeid u = *random_it;
 
     // color u with first available color if possible
+    color h = findMinAvailableColor(u);
+
     // in case it is the new solution has better fitness for any function I considered by now
     // so we can just add u to that color and continue tabu search with a next random uncolored node
-    setColor(u, findMinAvailableColor(u));
-    color h = colors[u];
-
+    if (h != k)
+    {
+      setColor(u, h);
+    }
     // h = k iff there is no free color available for u
     // assert for every neighbor j is f(S_j) >= f(S*)
-    if (h == k) {
+    else
+    {
       //explore neighborhood for every color 0 to k-1
       std::vector<int> costs(k, -graph->getDegree(u));
       for (const auto &v : *graph->getNeighbors(u)) if(colors[v] != k) costs[colors[v]] += graph->getDegree(v);
@@ -162,7 +157,7 @@ bool MMTPartialColoring::tabuSearch(){
     }
   }
 
-  return evaluate() == 0;
+  return greedy();
 }
 
 // clear (k+1)-st bucket in a greedy way
@@ -279,12 +274,17 @@ void MMTPartialColoring::toString(int maxLines) const {
 }
 
 measure MMTPartialColoring::evaluate() const {
-  measure cost = 0;
-  for (const auto & u : uncolored) {
-    int deg = graph->getDegree(u);
-    cost += deg < k ? 0 : deg;
+  return uncolored.size();
+}
+
+int MMTPartialColoring::getNumColors() const {
+  color maxcolor = 0;
+  for (const auto &kvp : colors) {
+    if (kvp.second > maxcolor) {
+      maxcolor = kvp.second;
+    }
   }
-  return cost;
+  return maxcolor + 1;
 }
 
 bool MMTPartialColoring::isValidColor(color value) const {
@@ -318,4 +318,36 @@ std::size_t MMTPartialColoring::UInt32PairHash::operator()(const std::pair<uint3
     //Shift first integer over to make room for the second integer. The two are
     //then packed side by side.
     return (((uint64_t)p.first)<<32) | ((uint64_t)p.second);
+}
+
+int MMTPartialColoring::distanceTo(MMTPartialColoring* S, bool exact) {
+  assert(k == S->k);
+  this->lockColoring();
+  std::vector<std::vector<int> > matIntersec(k+1,std::vector<int>(k+1,graph->n));
+  for (auto& kvp : colors) {
+    matIntersec[kvp.second][S->colors[kvp.first]]--;
+    matIntersec[S->colors[kvp.first]][kvp.second]--;
+  }
+
+  return exact ? exactDistance(matIntersec) : approxDistance(matIntersec);
+}
+
+// distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
+int MMTPartialColoring::approxDistance(std::vector<std::vector<int> >& matIntersec){
+  int max_cost = 0;
+  for (auto& intersec : matIntersec) {
+    max_cost += graph->n - *std::min_element(intersec.begin(), intersec.end());
+  }
+  return std::max(0, graph->n - max_cost);
+}
+
+int MMTPartialColoring::exactDistance(std::vector<std::vector<int> >& matIntersec){
+  //auto r = hungarian(matIntersec);
+  int r = 1;
+  std::cout << "Optimal cost: " << r << std::endl;
+  std::cout << "----------------- \n\n";
+
+	double cost = (k+1)*(graph->n) - r;
+
+	return graph->n - cost;
 }
