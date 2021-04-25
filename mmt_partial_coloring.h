@@ -77,9 +77,9 @@ private:
 
   int findMinAvailableColor(nodeid u);
 
-  int approxDistance(std::vector<std::vector<int> >& matIntersec);
+  int approxDistance(std::vector<std::vector<double> >& matIntersec);
 
-  int exactDistance(std::vector<std::vector<int> >& matIntersec);
+  int exactDistance(std::vector<std::vector<double> >& matIntersec);
 
   struct UInt32PairHash {
     std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const ;

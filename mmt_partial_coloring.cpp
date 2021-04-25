@@ -323,7 +323,7 @@ std::size_t MMTPartialColoring::UInt32PairHash::operator()(const std::pair<uint3
 int MMTPartialColoring::distanceTo(MMTPartialColoring* S, bool exact) {
   assert(k == S->k);
   this->lockColoring();
-  std::vector<std::vector<int> > matIntersec(k+1,std::vector<int>(k+1,graph->n));
+  std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
   for (auto& kvp : colors) {
     matIntersec[kvp.second][S->colors[kvp.first]]--;
     matIntersec[S->colors[kvp.first]][kvp.second]--;
@@ -333,19 +333,19 @@ int MMTPartialColoring::distanceTo(MMTPartialColoring* S, bool exact) {
 }
 
 // distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
-int MMTPartialColoring::approxDistance(std::vector<std::vector<int> >& matIntersec){
+int MMTPartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec){
   int max_cost = 0;
   for (auto& intersec : matIntersec) {
-    max_cost += graph->n - *std::min_element(intersec.begin(), intersec.end());
+    max_cost += graph->n - (int) *std::min_element(intersec.begin(), intersec.end());
   }
   return std::max(0, graph->n - max_cost);
 }
 
-int MMTPartialColoring::exactDistance(std::vector<std::vector<int> >& matIntersec){
-  //auto r = hungarian(matIntersec);
-  int r = 1;
-  std::cout << "Optimal cost: " << r << std::endl;
-  std::cout << "----------------- \n\n";
+int MMTPartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec){
+  HungarianAlgorithm HungAlgo;
+	vector<int> assignment;
+
+	double r = HungAlgo.Solve(matIntersec, assignment);
 
 	double cost = (k+1)*(graph->n) - r;
 

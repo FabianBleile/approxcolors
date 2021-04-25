@@ -1,78 +1,40 @@
-/********************************************************************
- ********************************************************************
- **
- ** libhungarian by Cyrill Stachniss, 2004
- **
- **
- ** Solving the Minimum Assignment Problem using the 
- ** Hungarian Method.
- **
- ** ** This file may be freely copied and distributed! **
- **
- ** Parts of the used code was originally provided by the 
- ** "Stanford GraphGase", but I made changes to this code.
- ** As asked by  the copyright node of the "Stanford GraphGase", 
- ** I hereby proclaim that this file are *NOT* part of the
- ** "Stanford GraphGase" distrubition!
- **
- ** This file is distributed in the hope that it will be useful,
- ** but WITHOUT ANY WARRANTY; without even the implied 
- ** warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- ** PURPOSE.  
- **
- ********************************************************************
- ********************************************************************/
+///////////////////////////////////////////////////////////////////////////////
+// Hungarian.h: Header file for Class HungarianAlgorithm.
+//
+// This is a C++ wrapper with slight modification of a hungarian algorithm implementation by Markus Buehren.
+// The original implementation is a few mex-functions for use in MATLAB, found here:
+// http://www.mathworks.com/matlabcentral/fileexchange/6543-functions-for-the-rectangular-assignment-problem
+//
+// Both this code and the orignal code are published under the BSD license.
+// by Cong Ma, 2016
+//
 
 #ifndef HUNGARIAN_H
 #define HUNGARIAN_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
-#define HUNGARIAN_NOT_ASSIGNED 0 
-#define HUNGARIAN_ASSIGNED 1
+#include <iostream>
+#include <vector>
 
-#define HUNGARIAN_MODE_MINIMIZE_COST   0
-#define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
+using namespace std;
 
 
-typedef struct {
-  int num_rows;
-  int num_cols;
-  int** cost;
-  int** assignment;  
-} hungarian_problem_t;
+class HungarianAlgorithm
+{
+public:
+	HungarianAlgorithm();
+	~HungarianAlgorithm();
+	double Solve(vector <vector<double> >& DistMatrix, vector<int>& Assignment);
 
-/** This method initialize the hungarian_problem structure and init 
- *  the  cost matrices (missing lines or columns are filled with 0).
- *  It returns the size of the quadratic(!) assignment matrix. **/
-int hungarian_init(hungarian_problem_t* p, 
-		   int** cost_matrix, 
-		   int rows, 
-		   int cols, 
-		   int mode);
-  
-/** Free the memory allocated by init. **/
-void hungarian_free(hungarian_problem_t* p);
+private:
+	void assignmentoptimal(int *assignment, double *cost, double *distMatrix, int nOfRows, int nOfColumns);
+	void buildassignmentvector(int *assignment, bool *starMatrix, int nOfRows, int nOfColumns);
+	void computeassignmentcost(int *assignment, double *cost, double *distMatrix, int nOfRows);
+	void step2a(int *assignment, double *distMatrix, bool *starMatrix, bool *newStarMatrix, bool *primeMatrix, bool *coveredColumns, bool *coveredRows, int nOfRows, int nOfColumns, int minDim);
+	void step2b(int *assignment, double *distMatrix, bool *starMatrix, bool *newStarMatrix, bool *primeMatrix, bool *coveredColumns, bool *coveredRows, int nOfRows, int nOfColumns, int minDim);
+	void step3(int *assignment, double *distMatrix, bool *starMatrix, bool *newStarMatrix, bool *primeMatrix, bool *coveredColumns, bool *coveredRows, int nOfRows, int nOfColumns, int minDim);
+	void step4(int *assignment, double *distMatrix, bool *starMatrix, bool *newStarMatrix, bool *primeMatrix, bool *coveredColumns, bool *coveredRows, int nOfRows, int nOfColumns, int minDim, int row, int col);
+	void step5(int *assignment, double *distMatrix, bool *starMatrix, bool *newStarMatrix, bool *primeMatrix, bool *coveredColumns, bool *coveredRows, int nOfRows, int nOfColumns, int minDim);
+};
 
-/** This method computes the optimal assignment. **/
-void hungarian_solve(hungarian_problem_t* p);
-
-/** Print the computed optimal assignment. **/
-void hungarian_print_assignment(hungarian_problem_t* p);
-
-/** Print the cost matrix. **/
-void hungarian_print_costmatrix(hungarian_problem_t* p);
-
-/** Print cost matrix and assignment matrix. **/
-void hungarian_print_status(hungarian_problem_t* p);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
-
-
-
