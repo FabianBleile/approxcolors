@@ -234,6 +234,16 @@ CLEANUP:
    return rval;
 }
 
+int COLORlp_deletecol (COLORlp *p, int colindex)
+{
+  int rval;
+  rval = QSdelete_col (p->p, colindex);
+  if (rval) {
+    fprintf (stderr, "QSdelete_col failed with return code %d\n", rval);
+  }
+  return rval;
+}
+
 int COLORlp_deleterow (COLORlp *p, int rowidx)
 {
   int rval;
