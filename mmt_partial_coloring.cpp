@@ -87,7 +87,11 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
 }
 
 // Mutation
+// set a pair (node, color) tabu for T steps
 bool MMTPartialColoring::tabuSearch(){
+  // Umleitung aktiv
+  // return tabuSearchSimplified();
+
   assert(L>0 && T>0);
   assert(color_classes.size() == 0);
   std::queue<std::pair<nodeid, color> > tabuQueue;
@@ -150,6 +154,53 @@ bool MMTPartialColoring::tabuSearch(){
 
     tabuList.insert(std::make_pair(u, h));
     tabuQueue.push(std::make_pair(u, h));
+
+    if (i >= T) {
+      tabuList.erase(tabuQueue.front());
+      tabuQueue.pop();
+    }
+  }
+
+  return greedy();
+}
+
+// Mutation MMT
+// set a single node tabu for T steps independant of the color.
+// minimize over |delta(V_{k+1})|
+bool MMTPartialColoring::tabuSearchSimplified(){
+  assert(L>0 && T>0);
+  assert(color_classes.size() == 0);
+  std::queue<nodeid > tabuQueue;
+  std::unordered_set<nodeid> tabuList;
+
+  for (size_t i = 0; i < L; i++) {
+    // solution discovered ? if yes break and return
+    if (uncolored.size() == 0) break;
+
+    // collect non tabu nodes
+    nodeid u = -1;
+    std::vector<nodeid> nonTabuNodes;
+    for (auto id : uncolored) {
+      if (tabuList.find(id) != tabuList.end())
+        nonTabuNodes.push_back(id);
+    }
+
+    // choose non tabu node at random or random uncolored node
+    if (!nonTabuNodes.empty()) {
+      u = *std::next(std::begin(nonTabuNodes), (int) rand() % nonTabuNodes.size());
+    } else {
+      u = *std::next(std::begin(uncolored), (int) rand() % uncolored.size());
+    }
+
+    //explore neighborhood for every color 0 to k-1
+    std::vector<int> costs(k, 0);
+    for (const auto &v : *graph->getNeighbors(u)) if(colors[v] != k) costs[colors[v]] += graph->getDegree(v);
+    color h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+
+    moveToColor(u, h);
+
+    tabuList.insert(u);
+    tabuQueue.push(u);
 
     if (i >= T) {
       tabuList.erase(tabuQueue.front());
@@ -326,7 +377,6 @@ int MMTPartialColoring::distanceTo(MMTPartialColoring* S, bool exact) {
   std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
   for (auto& kvp : colors) {
     matIntersec[kvp.second][S->colors[kvp.first]]--;
-    matIntersec[S->colors[kvp.first]][kvp.second]--;
   }
 
   return exact ? exactDistance(matIntersec) : approxDistance(matIntersec);
@@ -336,9 +386,9 @@ int MMTPartialColoring::distanceTo(MMTPartialColoring* S, bool exact) {
 int MMTPartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec){
   int max_cost = 0;
   for (auto& intersec : matIntersec) {
-    max_cost += graph->n - (int) *std::min_element(intersec.begin(), intersec.end());
+    max_cost += (int) *std::min_element(intersec.begin(), intersec.end());
   }
-  return std::max(0, graph->n - max_cost);
+  return std::max(0, max_cost - k*graph->n);
 }
 
 int MMTPartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec){
@@ -347,7 +397,5 @@ int MMTPartialColoring::exactDistance(std::vector<std::vector<double> >& matInte
 
 	double r = HungAlgo.Solve(matIntersec, assignment);
 
-	double cost = (k+1)*(graph->n) - r;
-
-	return graph->n - cost;
+	return r - k*graph->n;
 }

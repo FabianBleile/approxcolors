@@ -56,7 +56,7 @@ public:
     while (logger.UB > logger.LB) {
       EADecision(logger.UB-1);
       if (logger.status == EA_TIME_OUT) break;
-      logger.UB--;
+      logger.UB = cur_best_coloring.getNumColors();
       std::cout << "UB updated to " << logger.UB << " with status " << logger.status << '\n';
     }
   }
@@ -116,7 +116,7 @@ public:
       insertPool(tabusearch, pool, poolSimilarity, priority);
     }
 
-    printPoolDistance(pool);
+    // printPoolDistance(pool);
 
     clock_t t = clock();
     size_t iter = 0;
@@ -129,7 +129,7 @@ public:
       if(offspring.crossover(&(*parent_1), &(*parent_2)) || offspring.tabuSearch()) {
         logger.status = EA;
         cur_best_coloring = offspring;
-        printPoolDistance(pool);
+        // printPoolDistance(pool);
         return;
       }
 
@@ -165,8 +165,9 @@ public:
         updatePool(offspring, &(*parent_1), pool, poolSimilarity, priority);
       }
       iter++;
-      if (!(iter % 1000)) {
+      if (!(iter % 500)) {
         // std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
+        printPoolDistance(pool);
       }
 
       logger.totNumOffsprings++;
@@ -177,7 +178,7 @@ public:
   }
 
   void PHASE2_ColumnOptimization(){
-    std::cout << "Number of stable sets : " << columns.size() << '\n';
+    // std::cout << "Number of stable sets : " << columns.size() << '\n';
     COLORlp * lp = (COLORlp *) NULL;
 
     // number of stable sets - max : numColOpt
@@ -234,7 +235,7 @@ public:
       // argmax-th stable set from lp
       int * colind;
       int colcnt;
-      std::cout << "argmax = " << argmax << " and varCount = " << varCount << '\n';
+      // std::cout << "argmax = " << argmax << " and varCount = " << varCount << '\n';
       rval = COLORlp_get_column(lp, argmax, &colcnt, &colind);
 
       int temp_colind[colcnt];
@@ -354,16 +355,23 @@ private:
     }
   }
 
-  void printPoolDistance(std::vector<MMTPartialColoring>& pool){
+  void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false){
     assert(pool.size() != 0);
-    std::cout << "POOL distances" << '\n';
-    for (auto& partColA : pool) {
-      for (auto& partColB : pool) {
-        std::cout << partColA.distanceTo(&partColB, false) << " | " << partColA.distanceTo(&partColB,true) << '\t';
-        // std::cout << partColA.distanceTo(&partColB, false) << '\t';
+    std::cout << "pool distances : " << '\t';
+    int sum = 0, size = pool.size();
+    for (int i = 0; i < size; i++) {
+      for (int j = i+1; j < size; j++) {
+        int approx = pool[i].distanceTo(&pool[j], false);
+        int exact = pool[i].distanceTo(&pool[j],true);
+        if (expanded) {
+          std::cout << approx << " | " << exact << '\t';
+        } else {
+          sum += exact;
+        }
       }
-      std::cout << '\n';
+      if (expanded) std::cout << '\n';
     }
+    std::cout << "avg = " << sum / ((size*(size+1))/2) << '\n';
   }
 
   void printPoolFitness(std::vector<MMTPartialColoring>& pool){
@@ -399,7 +407,7 @@ void documentation(char *instance, MMT* mmt){
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 45, /*time limit*/ 10, /*pool size*/ 10, 0.2);
+  MMT mmt(argc, av, /*L*/ 750,/*T*/ 20, /*time limit*/ 80, /*pool size*/ 100, /*pgreedy*/0.2);
 
   mmt.start();
 

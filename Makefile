@@ -126,7 +126,11 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./mmt test/dimacs/queen13_13.col
+	./mmt test/dimacs/DSJC250.5.col
+
+testcompare:
+	./mmt test/dimacs/DSJC250.5.col
+	./color test/dimacs/DSJC250.5.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con

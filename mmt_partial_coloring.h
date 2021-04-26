@@ -33,6 +33,8 @@ public:
 
   bool tabuSearch();
 
+  bool tabuSearchSimplified();
+
   bool greedy();
 
   bool priorityGreedy(const std::vector<int>& v);
