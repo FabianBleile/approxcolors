@@ -23,8 +23,24 @@ extern "C" {
 using color = uint32_t;
 using measure = int;
 
+class PartialColoring {
+public:
+  PartialColoring(const int k, MMTGraph * igraph);
 
-class MMTPartialColoring {
+  MMTGraph * graph;
+  int k;
+  std::unordered_map<nodeid,color> colors;
+
+  int distanceTo(PartialColoring* S, bool exact = false) ;
+
+private:
+  int approxDistance(std::vector<std::vector<double> >& matIntersec);
+  int exactDistance(std::vector<std::vector<double> >& matIntersec);
+
+};
+
+
+class MMTPartialColoring : public PartialColoring {
 public:
   // empty constructor
   MMTPartialColoring(const int k, MMTGraph * igraph, int L, int T);
@@ -45,25 +61,16 @@ public:
 
   measure evaluate() const ;
 
-  int distanceTo(MMTPartialColoring* S, bool exact = false) ;
-
   int getNumColors() const ;
 
   void toString(int maxLines = 7) const ;
 
   std::unordered_set<nodeid> uncolored;
-
   std::vector<std::unordered_set<nodeid> > color_classes;
-
-  int k;
 
 private:
 
-  MMTGraph * graph;
-
   int L, T;
-
-  std::unordered_map<nodeid,color> colors;
 
   bool isValidColor(color value) const ;
 
@@ -78,10 +85,6 @@ private:
   void dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs);
 
   int findMinAvailableColor(nodeid u);
-
-  int approxDistance(std::vector<std::vector<double> >& matIntersec);
-
-  int exactDistance(std::vector<std::vector<double> >& matIntersec);
 
   struct UInt32PairHash {
     std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const ;
