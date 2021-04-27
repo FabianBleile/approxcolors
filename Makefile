@@ -126,7 +126,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./mmt test/dimacs/DSJC250.5.col
+	./mmt test/dimacs/queen8_8.col
 
 testcompare:
 	./mmt test/dimacs/DSJC250.5.col

@@ -407,7 +407,7 @@ void documentation(char *instance, MMT* mmt){
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 750,/*T*/ 20, /*time limit*/ 80, /*pool size*/ 100, /*pgreedy*/0.2);
+  MMT mmt(argc, av, /*L*/ 750,/*T*/ 20, /*time limit*/ 10, /*pool size*/ 100, /*pgreedy*/0.2);
 
   mmt.start();
 
