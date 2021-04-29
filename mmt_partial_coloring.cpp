@@ -1,8 +1,26 @@
 #include "mmt_partial_coloring.h"
 
+/*
+
+    *******************************************************
+    *******************************************************
+
+                    PartialColoring
+
+    *******************************************************
+    *******************************************************
+
+*/
+
 PartialColoring::PartialColoring(const int k, MMTGraph * graph) : k(k), graph(graph), colors() {
   assert(k!=0);
   assert(graph != NULL);
+
+  // generate ascending seq of nodes
+  std::vector<nodeid> v(graph->n);
+  std::iota(v.begin(), v.end(), 0);
+  // insert nodes in (k+1)-st bucket
+  for (const auto &u : v) setColor(u, k);
 }
 
 int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
@@ -13,6 +31,117 @@ int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
   }
 
   return exact ? exactDistance(matIntersec) : approxDistance(matIntersec);
+}
+
+// clear (k+1)-st bucket in a greedy way
+bool PartialColoring::greedy() {
+  // SEQ
+  std::vector<nodeid> v(uncolored.begin(), uncolored.end());
+  // obtain a time-based seed:
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
+  for (const auto &u : v) setColor(u, findMinAvailableColor(u));
+
+  return evaluate() == 0;
+}
+
+// clear (k+1)-st bucket in a dsatur way
+bool PartialColoring::dsatur(){
+  // compute initial degrees in G
+  std::vector<int > satdegree(graph->n); // degU, degDsatur
+  int u = 0;
+  std::generate(satdegree.begin(), satdegree.end(), [&] () mutable { return std::make_pair(graph->getDegree(u++), 0); });
+  for (nodeid i = 0; i < graph->n; i++) {
+    // compute random node with max degree in G from all nodes with max saturation
+    nodeid u = dsatur_selectMaxNode(satdegree);
+    // color max_node with the lowest available color
+    setColor(u, findMinAvailableColor(u));
+    // update degrees in G and C
+    dsatur_updateSatDeg(u, satdegree);
+  }
+  return evaluate() == 0;
+}
+
+int PartialColoring::dsatur_selectMaxNode(std::vector<int>& satdegree) const {
+  int maxsatdegree_node = 0;
+  for (size_t i = 1; i < graph->n; i++) {
+    if( (satdegree[maxsatdegree_node] < satdegree[i]) ||
+          ((degs[maxsatdegree_node] == degs[i]) &&
+          (graph->getDegree(maxsatdegree_node) < graph->getDegree(i))) ) {
+
+      maxsatdegree_node = i;
+
+    }
+  }
+  // obtain a time-based seed:
+  return maxsatdegree_node;
+}
+
+void PartialColoring::dsatur_updateSatDeg(nodeid u, std::vector<int>& satdegree){
+  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+  for (const auto &v : *u_neighbors) {
+    satdegree[v]++;
+  }
+}
+
+int PartialColoring::findMinAvailableColor(nodeid u) {
+  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+  std::vector<bool> colorIsAvailable(k+1,true);
+  for (const auto &v : *u_neighbors) {
+    colorIsAvailable[colors[v]] = false;
+  }
+  for (size_t i = 0; i < k; i++) { if (colorIsAvailable[i]) return i; }
+  return k;
+}
+
+measure PartialColoring::evaluate() const {
+  measure cost = 0;
+  for (const auto & u : uncolored) {
+    int deg = graph->getDegree(u);
+    cost += deg < k ? 0 : deg;
+  }
+  return cost;
+  // return uncolored.size();
+}
+
+void PartialColoring::setColor(nodeid u, color c){
+  if(c == k) uncolored.insert(u);
+  else uncolored.erase(u);
+  colors[u] = c;
+}
+
+void PartialColoring::moveToColor(nodeid u, color c) {
+  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+  for (const auto &v : *u_neighbors) {
+    if (colors[v] == c) setColor(v, k);
+  }
+  setColor(u,c);
+}
+
+void PartialColoring::toString(int maxLines) const {
+  std::cout << "MMTPartialColoring.toString() of " << this << '\n';
+
+  if (this->uncolored.empty()) {
+    std::cout << "successfully colored with " << k << " colors." << '\n';
+  }
+
+  for (size_t i = 0; i < k+1; i++) {
+    if(maxLines == 0) {
+      std::cout << "\t..." << '\n';
+      return;
+    }
+    std::cout << "( color " << i << " )" << ':';
+    for (const auto &kvp : colors) if (kvp.second == i) std::cout << kvp.first << ' ';
+    std::cout << '\n';
+    maxLines--;
+  }
+}
+
+std::size_t PartialColoring::UInt32PairHash::operator()(const std::pair<uint32_t, uint32_t> &p) const {
+    assert(sizeof(std::size_t)>=8);  //Ensure that std::size_t, the type of the hash, is large enough
+    //Shift first integer over to make room for the second integer. The two are
+    //then packed side by side.
+    return (((uint64_t)p.first)<<32) | ((uint64_t)p.second);
 }
 
 // distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
@@ -36,13 +165,24 @@ int PartialColoring::exactDistance(std::vector<std::vector<double> >& matInterse
 
 
 
+/*
+
+    *******************************************************
+    *******************************************************
+
+                    MMTPartialColoring
+
+    *******************************************************
+    *******************************************************
+
+*/
+
+
+
+
 // empty constructor
 MMTPartialColoring::MMTPartialColoring(const int k, MMTGraph * graph, int L, int T) : PartialColoring(k, graph), L(L), T(T) {
-  // generate ascending seq of nodes
-  std::vector<nodeid> v(graph->n);
-  std::iota(v.begin(), v.end(), 0);
-  // insert nodes in (k+1)-st bucket
-  for (const auto &u : v) setColor(u, k);
+  // everything handled by the super constructor
 }
 
 bool MMTPartialColoring::crossover(MMTPartialColoring* S1, MMTPartialColoring* S2){
@@ -246,19 +386,6 @@ bool MMTPartialColoring::tabuSearchSimplified(){
 }
 
 // clear (k+1)-st bucket in a greedy way
-bool MMTPartialColoring::greedy() {
-  assert(color_classes.size() == 0);
-  // SEQ
-  std::vector<nodeid> v(uncolored.begin(), uncolored.end());
-  // obtain a time-based seed:
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
-  for (const auto &u : v) setColor(u, findMinAvailableColor(u));
-
-  return evaluate() == 0;
-}
-
-// clear (k+1)-st bucket in a greedy way
 bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
   assert(color_classes.size() == 0);
   assert(priority_v.size() == graph->n);
@@ -282,86 +409,6 @@ bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
   return evaluate() == 0;
 }
 
-
-// clear (k+1)-st bucket in a dsatur way
-bool MMTPartialColoring::dsatur(){
-  assert(color_classes.size() == 0);
-  // compute initial degrees in G
-  std::vector<std::pair<int, int> > deg_dsatur(graph->n); // degU, degDsatur
-  int u = 0;
-  std::generate(deg_dsatur.begin(), deg_dsatur.end(), [&] () mutable { return std::make_pair(graph->getDegree(u++), 0); });
-  for (nodeid i = 0; i < graph->n; i++) {
-    // compute random node with max degree in G from all nodes with max saturation
-    nodeid u = dsatur_selectMaxNode(deg_dsatur);
-    // color max_node with the lowest available color
-    setColor(u, findMinAvailableColor(u));
-    // update degrees in G and C
-    dsatur_updateSatDeg(u, deg_dsatur);
-  }
-  return evaluate() == 0;
-}
-
-int MMTPartialColoring::dsatur_selectMaxNode(std::vector<std::pair<int, int> >& degs) const {
-  std::vector<nodeid> v = {0};
-  for (size_t i = 1; i < graph->n; i++) {
-    if(degs[v[0]].second < degs[i].second || (degs[v[0]].second == degs[i].second && degs[v[0]].first < degs[i].first)) {
-      v.clear();
-      v.push_back(i);
-    } else if (degs[v[0]].second == degs[i].second && degs[v[0]].first == degs[i].first) {
-      v.push_back(i);
-    }
-  }
-  // obtain a time-based seed:
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
-  return v[0];
-}
-
-void MMTPartialColoring::dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs){
-  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
-  for (const auto &v : *u_neighbors) {
-    if (degs[v].second != -1) {
-      degs[v].first--; // remove from G (uncolored Graph)
-      degs[v].second++; // add to C (colored Graph)
-    }
-  }
-  degs[u].second = -1;
-}
-
-int MMTPartialColoring::findMinAvailableColor(nodeid u) {
-  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
-  std::vector<bool> colorIsAvailable(k+1,true);
-  for (const auto &v : *u_neighbors) {
-    assert(isValidColor(colors[v]));
-    colorIsAvailable[colors[v]] = false;
-  }
-  for (size_t i = 0; i < k; i++) { if (colorIsAvailable[i]) return i; }
-  return k;
-}
-
-void MMTPartialColoring::toString(int maxLines) const {
-  std::cout << "MMTPartialColoring.toString() of " << this << '\n';
-
-  if (this->uncolored.empty()) {
-    std::cout << "successfully colored with " << k << " colors." << '\n';
-  }
-
-  for (size_t i = 0; i < k+1; i++) {
-    if(maxLines == 0) {
-      std::cout << "\t..." << '\n';
-      return;
-    }
-    std::cout << "( color " << i << " )" << ':';
-    for (const auto &kvp : colors) if (kvp.second == i) std::cout << kvp.first << ' ';
-    std::cout << '\n';
-    maxLines--;
-  }
-}
-
-measure MMTPartialColoring::evaluate() const {
-  return uncolored.size();
-}
-
 int MMTPartialColoring::getNumColors() const {
   color maxcolor = 0;
   for (const auto &kvp : colors) {
@@ -372,35 +419,10 @@ int MMTPartialColoring::getNumColors() const {
   return maxcolor + 1;
 }
 
-bool MMTPartialColoring::isValidColor(color value) const {
-  return value >= 0 && value < k + 1;
-}
-
-void MMTPartialColoring::setColor(nodeid u, color c){
-  if(c == k) uncolored.insert(u);
-  else uncolored.erase(u);
-  colors[u] = c;
-}
-
-void MMTPartialColoring::moveToColor(nodeid u, color c) {
-  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
-  for (const auto &v : *u_neighbors) {
-    if (colors[v] == c) setColor(v, k);
-  }
-  setColor(u,c);
-}
-
 void MMTPartialColoring::lockColoring(){
   if (color_classes.size() != 0) return;
   color_classes = std::vector<std::unordered_set<nodeid> >(k, std::unordered_set<nodeid>());
   for (const auto& kvp : colors) {
     if (kvp.second < k) color_classes[kvp.second].insert(kvp.first);
   }
-}
-
-std::size_t MMTPartialColoring::UInt32PairHash::operator()(const std::pair<uint32_t, uint32_t> &p) const {
-    assert(sizeof(std::size_t)>=8);  //Ensure that std::size_t, the type of the hash, is large enough
-    //Shift first integer over to make room for the second integer. The two are
-    //then packed side by side.
-    return (((uint64_t)p.first)<<32) | ((uint64_t)p.second);
 }

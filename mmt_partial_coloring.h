@@ -25,16 +25,40 @@ using measure = int;
 
 class PartialColoring {
 public:
-  PartialColoring(const int k, MMTGraph * igraph);
+  PartialColoring(const int k, MMTGraph * graph);
 
   MMTGraph * graph;
   int k;
   std::unordered_map<nodeid,color> colors;
+  std::unordered_set<nodeid> uncolored;
+
+  bool greedy();
+
+  bool dsatur();
 
   int distanceTo(PartialColoring* S, bool exact = false) ;
 
+  measure evaluate() const ;
+
+  void setColor(nodeid u, color c) ;
+
+  void moveToColor(nodeid u, color c) ;
+
+  int findMinAvailableColor(nodeid u);
+
+  void toString(int maxLines = 14) const ;
+
+  struct UInt32PairHash {
+    std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const ;
+  };
+
 private:
+  int dsatur_selectMaxNode(std::vector<std::pair<int, int> >& degs) const ;
+
+  void dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs);
+
   int approxDistance(std::vector<std::vector<double> >& matIntersec);
+
   int exactDistance(std::vector<std::vector<double> >& matIntersec);
 
 };
@@ -43,7 +67,9 @@ private:
 class MMTPartialColoring : public PartialColoring {
 public:
   // empty constructor
-  MMTPartialColoring(const int k, MMTGraph * igraph, int L, int T);
+  MMTPartialColoring(const int k, MMTGraph * graph, int L, int T);
+
+  // TODO : constructor from superclass
 
   bool crossover(MMTPartialColoring* S1, MMTPartialColoring* S2);
 
@@ -51,44 +77,28 @@ public:
 
   bool tabuSearchSimplified();
 
-  bool greedy();
-
   bool priorityGreedy(const std::vector<int>& v);
-
-  bool dsatur();
 
   void lockColoring() ;
 
-  measure evaluate() const ;
-
   int getNumColors() const ;
 
-  void toString(int maxLines = 7) const ;
-
-  std::unordered_set<nodeid> uncolored;
   std::vector<std::unordered_set<nodeid> > color_classes;
 
 private:
 
   int L, T;
 
-  bool isValidColor(color value) const ;
-
-  void setColor(nodeid u, color c) ;
-
-  void moveToColor(nodeid u, color c) ;
-
-  std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialColoring*, std::vector<int>*, int* > selectParent(const MMTPartialColoring* s1, const MMTPartialColoring* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color);
-
-  int dsatur_selectMaxNode(std::vector<std::pair<int, int> >& degs) const ;
-
-  void dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs);
-
-  int findMinAvailableColor(nodeid u);
-
-  struct UInt32PairHash {
-    std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const ;
-  };
+  std::tuple<const MMTPartialColoring*,
+        std::vector<int>*, int*,
+        const MMTPartialColoring*,
+        std::vector<int>*, int* >
+        selectParent(const MMTPartialColoring* s1, 
+          const MMTPartialColoring* s2,
+          std::vector<int>* s1_c,
+          std::vector<int>* s2_c,
+          int* s1_n, int* s2_n,
+        );
 };
 
 #endif
