@@ -25,6 +25,8 @@ PartialColoring::PartialColoring(const int k, MMTGraph * graph) : k(k), graph(gr
 
 int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
   assert(k == S->k);
+
+  // populate intersection matrix
   std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
   for (auto& kvp : colors) {
     matIntersec[kvp.second][S->colors[kvp.first]]--;
@@ -47,27 +49,36 @@ bool PartialColoring::greedy() {
 
 // clear (k+1)-st bucket in a dsatur way
 bool PartialColoring::dsatur(){
+  // shuffle uncolored nodes
+  std::vector<nodeid> v(uncolored.begin(), uncolored.end());
+  // obtain a time-based seed:
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
+
   // compute initial degrees in G
-  std::vector<int > satdegree(graph->n); // degU, degDsatur
-  int u = 0;
-  std::generate(satdegree.begin(), satdegree.end(), [&] () mutable { return std::make_pair(graph->getDegree(u++), 0); });
+  std::vector<int > satdegree(graph->n, 0);
+  std::vector<int > freedegree(graph->n);
+  for (nodeid u = 0; u < graph->n; u++) {
+    freedegree[u] = graph->getDegree(u);
+  }
   for (nodeid i = 0; i < graph->n; i++) {
     // compute random node with max degree in G from all nodes with max saturation
-    nodeid u = dsatur_selectMaxNode(satdegree);
+    nodeid u = dsatur_selectMaxNode(v, satdegree, freedegree);
     // color max_node with the lowest available color
     setColor(u, findMinAvailableColor(u));
     // update degrees in G and C
-    dsatur_updateSatDeg(u, satdegree);
+    dsatur_updateDeg(u, satdegree, freedegree);
+
   }
   return evaluate() == 0;
 }
 
-int PartialColoring::dsatur_selectMaxNode(std::vector<int>& satdegree) const {
+int PartialColoring::dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const {
   int maxsatdegree_node = 0;
-  for (size_t i = 1; i < graph->n; i++) {
-    if( (satdegree[maxsatdegree_node] < satdegree[i]) ||
-          ((degs[maxsatdegree_node] == degs[i]) &&
-          (graph->getDegree(maxsatdegree_node) < graph->getDegree(i))) ) {
+  for (auto i : shuffled_nodes) {
+    if( (satdegree[i] > satdegree[maxsatdegree_node]) ||
+          ((satdegree[maxsatdegree_node] == satdegree[i]) &&
+          (freedegree[i] > freedegree[maxsatdegree_node])) ) {
 
       maxsatdegree_node = i;
 
@@ -77,10 +88,27 @@ int PartialColoring::dsatur_selectMaxNode(std::vector<int>& satdegree) const {
   return maxsatdegree_node;
 }
 
-void PartialColoring::dsatur_updateSatDeg(nodeid u, std::vector<int>& satdegree){
+void PartialColoring::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::vector<int>& freedegree){
+  // set satdegree of chosen node to -1 in order to not select again
+  satdegree[u] = -1;
+  // get neighbors of u and update sat and freedegree of neighbors
+  color u_color = colors[u];
   const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
   for (const auto &v : *u_neighbors) {
-    satdegree[v]++;
+    if (satdegree[v] != -1) {
+      freedegree[v]--;
+      bool new_color = true;
+      const std::unordered_set<nodeid> * v_neighbors = graph->getNeighbors(v);
+      for (const auto &w : *v_neighbors) {
+        if (colors[w] == u_color && w != u) {
+          new_color = false;
+          break;
+        }
+      }
+      if (new_color) {
+        satdegree[v]++;
+      }
+    }
   }
 }
 
@@ -95,13 +123,13 @@ int PartialColoring::findMinAvailableColor(nodeid u) {
 }
 
 measure PartialColoring::evaluate() const {
-  measure cost = 0;
-  for (const auto & u : uncolored) {
-    int deg = graph->getDegree(u);
-    cost += deg < k ? 0 : deg;
-  }
-  return cost;
-  // return uncolored.size();
+  // measure cost = 0;
+  // for (const auto & u : uncolored) {
+  //   int deg = graph->getDegree(u);
+  //   cost += deg < k ? 0 : deg;
+  // }
+  // return cost;
+  return uncolored.size();
 }
 
 void PartialColoring::setColor(nodeid u, color c){
@@ -118,11 +146,21 @@ void PartialColoring::moveToColor(nodeid u, color c) {
   setColor(u,c);
 }
 
+int PartialColoring::getNumColors() const {
+  color maxcolor = 0;
+  for (const auto &kvp : colors) {
+    if (kvp.second > maxcolor) {
+      maxcolor = kvp.second;
+    }
+  }
+  return maxcolor + 1;
+}
+
 void PartialColoring::toString(int maxLines) const {
   std::cout << "MMTPartialColoring.toString() of " << this << '\n';
 
   if (this->uncolored.empty()) {
-    std::cout << "successfully colored with " << k << " colors." << '\n';
+    std::cout << "successfully colored with " << getNumColors() << " colors." << '\n';
   }
 
   for (size_t i = 0; i < k+1; i++) {
@@ -130,7 +168,7 @@ void PartialColoring::toString(int maxLines) const {
       std::cout << "\t..." << '\n';
       return;
     }
-    std::cout << "( color " << i << " )" << ':';
+    std::cout << "Color " << i << ": ";
     for (const auto &kvp : colors) if (kvp.second == i) std::cout << kvp.first << ' ';
     std::cout << '\n';
     maxLines--;
@@ -407,16 +445,6 @@ bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
   for (const auto &u : nodes_v) setColor(u, findMinAvailableColor(u));
 
   return evaluate() == 0;
-}
-
-int MMTPartialColoring::getNumColors() const {
-  color maxcolor = 0;
-  for (const auto &kvp : colors) {
-    if (kvp.second > maxcolor) {
-      maxcolor = kvp.second;
-    }
-  }
-  return maxcolor + 1;
 }
 
 void MMTPartialColoring::lockColoring(){

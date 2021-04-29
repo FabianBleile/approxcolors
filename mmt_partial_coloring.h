@@ -46,6 +46,8 @@ public:
 
   int findMinAvailableColor(nodeid u);
 
+  int getNumColors() const ;
+
   void toString(int maxLines = 14) const ;
 
   struct UInt32PairHash {
@@ -53,9 +55,9 @@ public:
   };
 
 private:
-  int dsatur_selectMaxNode(std::vector<std::pair<int, int> >& degs) const ;
+  int dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const ;
 
-  void dsatur_updateSatDeg(nodeid u, std::vector<std::pair<int, int> >& degs);
+  void dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::vector<int>& freedegree);
 
   int approxDistance(std::vector<std::vector<double> >& matIntersec);
 
@@ -81,8 +83,6 @@ public:
 
   void lockColoring() ;
 
-  int getNumColors() const ;
-
   std::vector<std::unordered_set<nodeid> > color_classes;
 
 private:
@@ -93,11 +93,11 @@ private:
         std::vector<int>*, int*,
         const MMTPartialColoring*,
         std::vector<int>*, int* >
-        selectParent(const MMTPartialColoring* s1, 
+        selectParent(const MMTPartialColoring* s1,
           const MMTPartialColoring* s2,
           std::vector<int>* s1_c,
           std::vector<int>* s2_c,
-          int* s1_n, int* s2_n,
+          int* s1_n, int* s2_n, int cur_color
         );
 };
 

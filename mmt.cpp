@@ -6,6 +6,8 @@ extern "C" {
 #include "mmt_graph.h"
 #include "mmt_partial_coloring.h"
 
+#include "color_cluster.cpp"
+
 #include <time.h>
 #include <vector>
 #include <utility>
@@ -36,7 +38,7 @@ public:
     PHASE0_EAInit();
     PHASE1_EAOptimizer();
     if(logger.UB != logger.LB) {
-      PHASE2_ColumnOptimization();
+      // PHASE2_ColumnOptimization();
     } else {
       cur_best_coloring.greedy();
     }
@@ -46,7 +48,7 @@ public:
 
   void PHASE0_EAInit(){
     MMTPartialColoring init = MMTPartialColoring(logger.UB, &graph, L, T);
-    init.greedy();
+    init.dsatur();
     init.tabuSearch();
     cur_best_coloring = init;
     logger.UB = init.getNumColors();
@@ -57,7 +59,7 @@ public:
       EADecision(logger.UB-1);
       if (logger.status == EA_TIME_OUT) break;
       logger.UB = cur_best_coloring.getNumColors();
-      std::cout << "UB updated to " << logger.UB << " with status " << logger.status << '\n';
+      std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
     }
   }
 
@@ -80,24 +82,24 @@ public:
     // apply different initialization algorithms on the pool
     // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
 
-    // SEQ Block
-    int seq_block_size = pool_size/3;
-    for (size_t i = 0; i < seq_block_size; i++) {
-      MMTPartialColoring seq = MMTPartialColoring(k, &graph, L, T);
-      if(seq.greedy() || seq.tabuSearch()) {
-        logger.status = INIT_GREEDY;
-        cur_best_coloring = seq;
-        return;
-      }
-      insertPool(seq, pool, poolSimilarity, priority);
-    }
-
     // DSATUR Block
     int dsatur_block_size = pool_size/3;
     for (size_t i = 0; i < dsatur_block_size; i++) {
       MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
       if(dsatur.dsatur() || dsatur.tabuSearch()) {
         logger.status = INIT_DSATUR;
+        cur_best_coloring = dsatur;
+        return;
+      }
+      insertPool(dsatur, pool, poolSimilarity, priority);
+    }
+
+    // SEQ Block
+    int seq_block_size = pool_size/3;
+    for (size_t i = 0; i < seq_block_size; i++) {
+      MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
+      if(dsatur.dsatur() || dsatur.tabuSearch()) {
+        logger.status = INIT_GREEDY;
         cur_best_coloring = dsatur;
         return;
       }
@@ -167,7 +169,7 @@ public:
       iter++;
       if (!(iter % 500)) {
         // std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
-        printPoolDistance(pool);
+        // printPoolDistance(pool);
       }
 
       logger.totNumOffsprings++;
@@ -407,12 +409,61 @@ void documentation(char *instance, MMT* mmt){
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 750,/*T*/ 20, /*time limit*/ 10, /*pool size*/ 100, /*pgreedy*/0.2);
+  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 25, /*time limit*/ 100, /*pool size*/ 20, /*pgreedy*/0.2);
 
   mmt.start();
 
   documentation(av[1], &mmt);
-  // mmt.testing();
+
+
+  // MMTGraph graph(argc,av);
+  //
+  // int k = 240;
+  //
+  // MMTPartialColoring test(k, &graph, 750, 45);
+  // test.greedy();
+  // test.toString();
+  //
+  // std::cout << "TEST" << '\n';
+  // // std::vector<int> hist0(graph.n, 0);
+  // std::vector<int> hist1(graph.n, 0);
+  // for (size_t i = 0; i < 100000; i++) {
+  //   PartialColoring temp0(k, &graph);
+  //   temp0.greedy();
+  //   PartialColoring temp1(k, &graph);
+  //   temp1.greedy();
+  //   // hist0[temp0.distanceTo(&temp1, false)]++;
+  //   hist1[temp0.distanceTo(&temp1, true)]++;
+  // }
+  //
+  // for (size_t i = 0; i < graph.n; i++) {
+  //   if (hist1[i] > 0) {
+  //     std::cout << i << ',' << hist1[i] << ' ';
+  //   }
+  // }
+  // std::cout << '\n';
+
+  // PartialColoringCluster A(10*graph.n, graph.n, k, &graph);
+  //
+  // for (size_t i = 0; i < 10000; i++) {
+  //   PartialColoring temp0(k, &graph);
+  //   temp0.greedy();
+  //   A.feed(temp0);
+  // }
+  //
+  // std::cout << "FEEDED " << '\n';
+  //
+  // for (size_t i = 0; i < 10000; i++) {
+  //   PartialColoring temp0(k, &graph);
+  //   temp0.greedy();
+  //   A.test(temp0);
+  // }
+  //
+  // std::cout << "TESTED" << '\n';
+  //
+  // A.writeToFile();
+  //
+  // A.toString();
 
   return 0;
-}
+};
