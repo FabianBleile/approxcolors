@@ -409,20 +409,29 @@ void documentation(char *instance, MMT* mmt){
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 25, /*time limit*/ 100, /*pool size*/ 20, /*pgreedy*/0.2);
-
-  mmt.start();
-
-  documentation(av[1], &mmt);
-
-
-  // MMTGraph graph(argc,av);
+  // MMT mmt(argc, av, /*L*/ 1000,/*T*/ 25, /*time limit*/ 100, /*pool size*/ 20, /*pgreedy*/0.2);
   //
-  // int k = 240;
+  // mmt.start();
   //
-  // MMTPartialColoring test(k, &graph, 750, 45);
-  // test.greedy();
-  // test.toString();
+  // documentation(av[1], &mmt);
+
+
+  MMTGraph graph(argc,av);
+
+  clock_t t = clock();
+
+  int k = 36;
+
+  for (size_t i = 0; i < 10000; i++) {
+    MMTPartialColoring test(k, &graph, 750, 45);
+    test.tabuSearch();
+  }
+  std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
+  for (size_t i = 0; i < 10000; i++) {
+    MMTPartialColoring test(k, &graph, 750, 45);
+    test.dsatur();
+  }
+  std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
   //
   // std::cout << "TEST" << '\n';
   // // std::vector<int> hist0(graph.n, 0);
