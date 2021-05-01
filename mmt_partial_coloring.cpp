@@ -12,7 +12,7 @@
 
 */
 
-PartialColoring::PartialColoring(const int k, MMTGraph * graph) : k(k), graph(graph), colors() {
+PartialColoring::PartialColoring(const int k, MMTGraph * graph) : k(k), graph(graph), colors(graph->n) {
   assert(k!=0);
   assert(graph != NULL);
 
@@ -28,8 +28,8 @@ int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
 
   // populate intersection matrix
   std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
-  for (auto& kvp : colors) {
-    matIntersec[kvp.second][S->colors[kvp.first]]--;
+  for (size_t i = 0; i < colors.size(); i++) {
+    matIntersec[colors[i]][S->colors[i]]--;
   }
 
   return exact ? exactDistance(matIntersec) : approxDistance(matIntersec);
@@ -93,12 +93,12 @@ void PartialColoring::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, st
   satdegree[u] = -1;
   // get neighbors of u and update sat and freedegree of neighbors
   color u_color = colors[u];
-  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+  const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   for (const auto &v : *u_neighbors) {
     if (satdegree[v] != -1) {
       freedegree[v]--;
       bool new_color = true;
-      const std::unordered_set<nodeid> * v_neighbors = graph->getNeighbors(v);
+      const std::vector<nodeid> * v_neighbors = graph->getNeighbors(v);
       for (const auto &w : *v_neighbors) {
         if (colors[w] == u_color && w != u) {
           new_color = false;
@@ -113,7 +113,7 @@ void PartialColoring::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, st
 }
 
 int PartialColoring::findMinAvailableColor(nodeid u) {
-  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+  const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   std::vector<bool> colorIsAvailable(k+1,true);
   for (const auto &v : *u_neighbors) {
     colorIsAvailable[colors[v]] = false;
@@ -123,13 +123,13 @@ int PartialColoring::findMinAvailableColor(nodeid u) {
 }
 
 measure PartialColoring::evaluate() const {
-  // measure cost = 0;
-  // for (const auto & u : uncolored) {
-  //   int deg = graph->getDegree(u);
-  //   cost += deg < k ? 0 : deg;
-  // }
-  // return cost;
-  return uncolored.size();
+  measure cost = 0;
+  for (const auto & u : uncolored) {
+    int deg = graph->getDegree(u);
+    cost += deg < k ? 0 : deg;
+  }
+  return cost;
+  // return uncolored.size();
 }
 
 void PartialColoring::setColor(nodeid u, color c){
@@ -139,7 +139,7 @@ void PartialColoring::setColor(nodeid u, color c){
 }
 
 void PartialColoring::moveToColor(nodeid u, color c) {
-  const std::unordered_set<nodeid> * u_neighbors = graph->getNeighbors(u);
+  const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   for (const auto &v : *u_neighbors) {
     if (colors[v] == c) setColor(v, k);
   }
@@ -148,9 +148,9 @@ void PartialColoring::moveToColor(nodeid u, color c) {
 
 int PartialColoring::getNumColors() const {
   color maxcolor = 0;
-  for (const auto &kvp : colors) {
-    if (kvp.second > maxcolor) {
-      maxcolor = kvp.second;
+  for (size_t i = 0; i < colors.size(); i++) {
+    if (colors[i] > maxcolor) {
+      maxcolor = colors[i];
     }
   }
   return maxcolor + 1;
@@ -169,7 +169,7 @@ void PartialColoring::toString(int maxLines) const {
       return;
     }
     std::cout << "Color " << i << ": ";
-    for (const auto &kvp : colors) if (kvp.second == i) std::cout << kvp.first << ' ';
+    for (size_t j = 0; j < colors.size(); i++) if (colors[j] == i) std::cout << j << ' ';
     std::cout << '\n';
     maxLines--;
   }
@@ -450,7 +450,7 @@ bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
 void MMTPartialColoring::lockColoring(){
   if (color_classes.size() != 0) return;
   color_classes = std::vector<std::unordered_set<nodeid> >(k, std::unordered_set<nodeid>());
-  for (const auto& kvp : colors) {
-    if (kvp.second < k) color_classes[kvp.second].insert(kvp.first);
+  for (size_t i = 0; i < colors.size(); i++) {
+    if (colors[i] < k) color_classes[colors[i]].insert(i);
   }
 }

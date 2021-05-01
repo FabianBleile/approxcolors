@@ -409,11 +409,15 @@ void documentation(char *instance, MMT* mmt){
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 25, /*time limit*/ 100, /*pool size*/ 20, /*pgreedy*/0.2);
+  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 25, /*time limit*/ 5, /*pool size*/ 20, /*pgreedy*/0.2);
 
   mmt.start();
 
+  std::cout << "CONE WITH CALCULATING" << '\n';
+
   documentation(av[1], &mmt);
+
+  std::cout << "DONE" << '\n';
 
 
   // MMTGraph graph(argc,av);

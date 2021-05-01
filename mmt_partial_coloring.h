@@ -29,7 +29,7 @@ public:
 
   MMTGraph * graph;
   int k;
-  std::unordered_map<nodeid,color> colors;
+  std::vector<color> colors;
   std::unordered_set<nodeid> uncolored;
 
   bool greedy();

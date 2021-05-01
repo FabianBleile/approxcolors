@@ -4,20 +4,20 @@ MMTGraph::MMTGraph(int argc, char **av) {
   int *elist;
   read_graph(argc, av, &n, &m, &elist);
 
-  adjList = std::vector<std::unordered_set<nodeid> >(n,std::unordered_set<nodeid>());
+  adjList = std::vector<std::vector<nodeid> >(n,std::vector<nodeid>());
 
   for (size_t i = 0; i < m; i++) {
-    adjList[(elist)[2*i]].insert((elist)[2*i + 1]);
-    adjList[(elist)[2*i + 1]].insert((elist)[2*i]);
+    adjList[(elist)[2*i]].push_back((elist)[2*i + 1]);
+    adjList[(elist)[2*i + 1]].push_back((elist)[2*i]);
   }
 }
 
 bool MMTGraph::isAdj(const nodeid u, const nodeid v) const {
   assert(u != v && isValid(u) && isValid(v));
-  return adjList[u].find(v) != adjList[u].end();
+  return std::find(adjList[u].begin(),adjList[u].end(),v) != adjList[u].end();
 }
 
-const std::unordered_set<nodeid>* MMTGraph::getNeighbors(const nodeid u) const {
+const std::vector<nodeid>* MMTGraph::getNeighbors(const nodeid u) const {
   assert(isValid(u));
   return &adjList[u];
 }
