@@ -237,3 +237,5 @@ test/dimacs/DSJC250.5.col,64,142,0,28519,20390,29,2,-1
 test/dimacs/DSJC250.5.col,64,109,0,20886,19309,30,2,-1
 test/dimacs/DSJC250.5.col,64,115,0,23861,20827,29,2,-1
 test/dimacs/DSJC250.5.col,64,12,0,2745,1280,30,2,-1
+test/dimacs/DSJC250.5.col,64,6,0,4042,3305,31,2,-1
+test/dimacs/DSJC250.5.col,64,7,0,4488,3275,30,2,-1

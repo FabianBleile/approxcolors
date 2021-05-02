@@ -169,7 +169,7 @@ void PartialColoring::toString(int maxLines) const {
       return;
     }
     std::cout << "Color " << i << ": ";
-    for (size_t j = 0; j < colors.size(); i++) if (colors[j] == i) std::cout << j << ' ';
+    for (size_t j = 0; j < colors.size(); j++) if (colors[j] == i) std::cout << j << ' ';
     std::cout << '\n';
     maxLines--;
   }
