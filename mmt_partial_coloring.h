@@ -32,7 +32,7 @@ public:
   std::vector<color> colors;
   std::unordered_set<nodeid> uncolored;
 
-  bool greedy();
+  bool greedy(const vector<nodeid>& v = vector<nodeid>());
 
   bool dsatur();
 
@@ -59,9 +59,9 @@ private:
 
   void dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::vector<int>& freedegree);
 
-  int approxDistance(std::vector<std::vector<double> >& matIntersec);
+  int approxDistance(std::vector<std::vector<double> >& matIntersec, int max_similarity);
 
-  int exactDistance(std::vector<std::vector<double> >& matIntersec);
+  int exactDistance(std::vector<std::vector<double> >& matIntersec, int max_similarity);
 
 };
 
@@ -88,6 +88,8 @@ public:
 private:
 
   int L, T;
+
+  int tabuSerach_updateLocalBest(MMTPartialColoring& local_best_col, int local_best_fitness);
 
   std::tuple<const MMTPartialColoring*,
         std::vector<int>*, int*,

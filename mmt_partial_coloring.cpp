@@ -28,21 +28,32 @@ int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
 
   // populate intersection matrix
   std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
+  int num_uncolored = 0;
   for (size_t i = 0; i < colors.size(); i++) {
     matIntersec[colors[i]][S->colors[i]]--;
+    if (S->colors[i] == k) num_uncolored++;
   }
-
-  return exact ? exactDistance(matIntersec) : approxDistance(matIntersec);
+  num_uncolored += k*graph->n - std::accumulate(matIntersec[k].begin(), matIntersec[k].end()-1, 0);
+  // remove uncolored nodes from distance calculation
+  matIntersec.pop_back();
+  for (auto& vIntersec : matIntersec) {
+    vIntersec.pop_back();
+  }
+  return exact ? exactDistance(matIntersec, num_uncolored) : approxDistance(matIntersec, num_uncolored);
 }
 
 // clear (k+1)-st bucket in a greedy way
-bool PartialColoring::greedy() {
+bool PartialColoring::greedy(const vector<nodeid>& v) {
   // SEQ
-  std::vector<nodeid> v(uncolored.begin(), uncolored.end());
-  // obtain a time-based seed:
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
-  for (const auto &u : v) setColor(u, findMinAvailableColor(u));
+  if (v.empty()) {
+    std::vector<nodeid> temp(uncolored.begin(), uncolored.end());
+    // obtain a time-based seed:
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(temp.begin(), temp.end(), std::default_random_engine(seed));
+    for (const auto &u : temp) setColor(u, findMinAvailableColor(u));
+  } else if (v.size() == graph->n) {
+    for (const auto &u : v) setColor(u, findMinAvailableColor(u));
+  }
 
   return evaluate() == 0;
 }
@@ -183,21 +194,28 @@ std::size_t PartialColoring::UInt32PairHash::operator()(const std::pair<uint32_t
 }
 
 // distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
-int PartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec){
+int PartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
   int max_cost = 0;
   for (auto& intersec : matIntersec) {
     max_cost += (int) *std::min_element(intersec.begin(), intersec.end());
   }
-  return std::max(0, max_cost - k*graph->n);
+  return std::max(0, max_cost - k*num_uncolored);
 }
 
-int PartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec){
+int PartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
   HungarianAlgorithm HungAlgo;
 	vector<int> assignment;
 
 	double r = HungAlgo.Solve(matIntersec, assignment);
-
-	return r - k*graph->n;
+  // std::cout << '\n';
+  // for (auto i : assignment) {
+  //   std::cout << i << ',';
+  // }
+  // std::cout << '\n';
+  // // r_min =
+  // std::cout << r << ' ' << graph->n << ' ' << num_uncolored << '\n';
+	return graph->n - num_uncolored - (k*graph->n - r);
+  // return num_uncolored;
 }
 
 
@@ -303,15 +321,17 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
 bool MMTPartialColoring::tabuSearch(){
   // Umleitung aktiv
   // return tabuSearchSimplified();
+  std::vector<bool> isChosen(graph->n, false);
 
   assert(L>0 && T>0);
   assert(color_classes.size() == 0);
   std::queue<std::pair<nodeid, color> > tabuQueue;
   std::unordered_set<std::pair<nodeid, color>, UInt32PairHash> tabuList;
 
-  std::pair<MMTPartialColoring, measure > local_best = std::make_pair(*this, evaluate());
+  MMTPartialColoring local_best_col = *this;
+  measure local_best_fitness = evaluate();
 
-  for (size_t i = 0; i < L; i++) {
+  for (size_t i = 0; i < L  /*uncolored.size() > 0*/; i++) {
     // solution discovered ? if yes break and return
     if (uncolored.empty()) break;
 
@@ -319,6 +339,8 @@ bool MMTPartialColoring::tabuSearch(){
     assert(uncolored.size() != 0);
     auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
     nodeid u = *random_it;
+
+    // isChosen[u] = true;
 
     // color u with first available color if possible
     color h = findMinAvailableColor(u);
@@ -328,6 +350,10 @@ bool MMTPartialColoring::tabuSearch(){
     if (h != k)
     {
       setColor(u, h);
+      local_best_fitness = tabuSerach_updateLocalBest(local_best_col, local_best_fitness);
+      if (local_best_fitness == 0) {
+        return local_best_fitness == 0;
+      }
     }
     // h = k iff there is no free color available for u
     // assert for every neighbor j is f(S_j) >= f(S*)
@@ -356,6 +382,13 @@ bool MMTPartialColoring::tabuSearch(){
         if (costs[temp_h] < std::numeric_limits<int>::max()) {
           h = temp_h;
         }
+
+        if (costs[h] < 0) {
+          local_best_fitness = tabuSerach_updateLocalBest(local_best_col, local_best_fitness);
+          if (local_best_fitness == 0) {
+            return local_best_fitness == 0;
+          }
+        }
       }
 
       assert(h < k); // at this point we want to add u to a color (color h is the set of all uncolored vertices)
@@ -373,7 +406,14 @@ bool MMTPartialColoring::tabuSearch(){
     }
   }
 
-  return greedy();
+  // for (size_t i = 0; i < isChosen.size(); i++) {
+  //   if(isChosen[i] == false) {
+  //     std::cout << i << ' ';
+  //   }
+  // }
+  // std::cout << '\n';
+
+  return evaluate() == 0;
 }
 
 // Mutation MMT
@@ -453,4 +493,13 @@ void MMTPartialColoring::lockColoring(){
   for (size_t i = 0; i < colors.size(); i++) {
     if (colors[i] < k) color_classes[colors[i]].insert(i);
   }
+}
+
+int MMTPartialColoring::tabuSerach_updateLocalBest(MMTPartialColoring& local_best_col, int local_best_fitness) {
+  measure curfitness = evaluate();
+  if (curfitness < local_best_fitness) {
+    local_best_col = *this;
+    return curfitness;
+  }
+  return local_best_fitness;
 }

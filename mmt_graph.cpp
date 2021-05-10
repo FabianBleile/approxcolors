@@ -12,6 +12,10 @@ MMTGraph::MMTGraph(int argc, char **av) {
   }
 }
 
+MMTGraph::MMTGraph(MMTGraph * input) {
+  adjList = input->adjList;
+}
+
 bool MMTGraph::isAdj(const nodeid u, const nodeid v) const {
   assert(u != v && isValid(u) && isValid(v));
   return std::find(adjList[u].begin(),adjList[u].end(),v) != adjList[u].end();

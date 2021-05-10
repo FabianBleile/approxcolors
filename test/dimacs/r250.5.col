@@ -12,7 +12,7 @@ c              the corresponding nodes is .y or
 c              less.  A "c" denotes the complement
 c              of such a graph.
 c
-c
+c 
 c U(n,d) graph
 c graph gen seed     : 943933
 c number of vertices : 250

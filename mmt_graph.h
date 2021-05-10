@@ -17,6 +17,8 @@ public:
 
   MMTGraph(int argc, char **av) ;
 
+  MMTGraph(MMTGraph * input) ;
+
   bool isAdj(const nodeid u, const nodeid v) const ;
 
   const std::vector<nodeid>* getNeighbors(const nodeid u) const ;

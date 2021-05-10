@@ -20,14 +20,16 @@ extern "C" {
 class MMT {
 public:
 
-  MMT(int argc, char **av, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
-   : graph(argc,av), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
-   cur_best_coloring(MMTPartialColoring(graph.n, &graph, L, T)), pGreedy(pGreedy), N(graph.n)
+  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
+   : graph(graph), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
+   cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), pGreedy(pGreedy), N(graph->n),
+   clustering()
 
    {
+     this->graph = *graph;
     // compute lower bound
     // compute upper bound
-    logger.UB = N+1;
+    logger.UB = graph->n;
     measure_best_solution = N*N;
 
     std::cout << "N = " << N << '\n';
@@ -51,7 +53,9 @@ public:
     init.dsatur();
     init.tabuSearch();
     cur_best_coloring = init;
-    logger.UB = init.getNumColors();
+    if (init.uncolored.empty()) {
+      logger.UB = init.getNumColors();
+    }
   }
 
   void PHASE1_EAOptimizer() {
@@ -64,6 +68,8 @@ public:
   }
 
   void EADecision(int k) {
+    // bool analyse_pool = clustering.k == k ? true : false;
+    // std::cout << "analyse_pool ? " << analyse_pool << '\n';
     // reset lastItNumOffsprings
     logger.lastItNumOffsprings = 0;
     // poolSimilarity : collects properties for every individual in the pool
@@ -134,6 +140,9 @@ public:
         // printPoolDistance(pool);
         return;
       }
+      // if (analyse_pool) {
+      //   clustering.test(offspring, true);
+      // }
 
       // std::cout << (offspring->distanceTo(&(*parent_1)) + offspring->distanceTo(&(*parent_2)))/2 << ',';
       /*
@@ -166,15 +175,14 @@ public:
       } else {
         updatePool(offspring, &(*parent_1), pool, poolSimilarity, priority);
       }
+      // if (analyse_pool) {
+      //   clustering.test(offspring, false);
+      // }
       iter++;
-      if (!(iter % 500)) {
-        // std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
-        // printPoolDistance(pool);
-      }
-
       logger.totNumOffsprings++;
       logger.lastItNumOffsprings++;
     }
+    // printPoolDistance(pool);
     logger.status = EA_TIME_OUT;
     return;
   }
@@ -267,6 +275,15 @@ public:
     return &cur_best_coloring;
   }
 
+  void setClustering(PartialColoringCluster& clustering){
+    this->clustering = clustering;
+  }
+
+  void streamClustering(const char * filename){
+    assert(clustering.k > 0);
+    clustering.writeAnalysisToFile(filename);
+  }
+
   std::stringstream streamLogs(){
     std::stringstream logs;
     logs << logger.status << ',';
@@ -315,6 +332,7 @@ private:
   MMTPartialColoring cur_best_coloring;
   double pGreedy;
   const double priority_noise = 0.5;
+  PartialColoringCluster clustering;
 
   LogData logger;
 
@@ -359,21 +377,20 @@ private:
 
   void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false){
     assert(pool.size() != 0);
-    std::cout << "pool distances : " << '\t';
+    std::cout << "pool distances : " << '\n';
     int sum = 0, size = pool.size();
     for (int i = 0; i < size; i++) {
       for (int j = i+1; j < size; j++) {
-        int approx = pool[i].distanceTo(&pool[j], false);
+        // int approx = pool[i].distanceTo(&pool[j], false);
         int exact = pool[i].distanceTo(&pool[j],true);
         if (expanded) {
-          std::cout << approx << " | " << exact << '\t';
-        } else {
-          sum += exact;
+          std::cout << exact << '\t'; // << pool[i].uncolored.size() << '\t';
         }
+        sum += exact;
       }
       if (expanded) std::cout << '\n';
     }
-    std::cout << "avg = " << sum / ((size*(size+1))/2) << '\n';
+    std::cout << "avg = " << sum / (size*(size-1)/2) << '\n';
   }
 
   void printPoolFitness(std::vector<MMTPartialColoring>& pool){
@@ -398,74 +415,118 @@ private:
   }
 };
 
-void documentation(char *instance, MMT* mmt){
+void documentation(char *instance, MMT* mmt, int i, int imax){
   char filename[ ] = "mmt_documentation.txt";
   std::ofstream doc;
   doc.open (filename, std::fstream::app);
-  doc << instance << ',';
+  doc << instance << ',' << i << '/' << imax << ',';
   doc << mmt->streamLogs().rdbuf() << '\n';
   doc.close();
 }
 
+void createCluster(const char * filename, MMTGraph * graph, int k, int num_center, int L = 100, int T = 10){
+
+  PartialColoringCluster A(num_center, graph->n, k, graph);
+
+  int it  = num_center*10000;
+
+  std::cout << std::endl;
+
+  for (size_t i = 0; i < it; i++) {
+    PartialColoring basetemp0(k, graph);
+    basetemp0.greedy();
+    // temp0.tabuSearch();
+    // PartialColoring basetemp0 = temp0;
+    A.feed(basetemp0);
+    // MMTPartialColoring temp1(k, &graph, L, T);
+    // temp1.dsatur();
+    // temp1.tabuSearch();
+    // PartialColoring basetemp1 = temp1;
+    // A.feed(basetemp1);
+    if((i % (it/500)) == 0){
+      cout << "\e[A\r\e[0K"<< ((float) i/it)*100 << '%'<<endl;;
+    }
+  }
+
+  A.writeToFile(filename);
+}
+
+void testCluster(const char * filename, MMTGraph * graph, int k, int num_center, int L = 500, int T = 10){
+  PartialColoringCluster B(filename, graph);
+
+  int it  = num_center*10000;
+
+  std::cout << std::endl;
+
+  for (size_t i = 0; i < it; i++) {
+    PartialColoring basetemp0(k, graph);
+    // basetemp0.greedy();
+    // temp0.tabuSearch();
+    // PartialColoring basetemp0 = temp0;
+    B.test(basetemp0, true);
+    // MMTPartialColoring temp1(k, graph, L, T);
+    // temp1.dsatur();
+    // temp1.tabuSearch();
+    // PartialColoring basetemp1 = temp1;
+    // B.test(basetemp1, true);
+    if((i % (it/500)) == 0){
+      cout << "\e[A\r\e[0K"<< ((float) i/it)*100 << '%'<<endl;;
+    }
+  }
+
+  B.writeAnalysisToFile(filename);
+}
+
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 45, /*time limit*/ 5, /*pool size*/ 20, /*pgreedy*/0.2);
+  int PS = 20, L = 5000, T = 45, time_limit = 30;
 
-  mmt.start();
-
-  std::cout << "CONE WITH CALCULATING" << '\n';
-
-  documentation(av[1], &mmt);
-
-  std::cout << "DONE" << '\n';
-
-
-  // MMTGraph graph(argc,av);
+  // string filename = "DSC250.5.clu";
+  // const char * arrfilename = filename.c_str();
+  // int k = 28;
   //
-  // clock_t t = clock();
+  MMTGraph graph(argc,av);
   //
-  // int k = 36;
-  //
-  // for (size_t i = 0; i < 10000; i++) {
-  //   MMTPartialColoring test(k, &graph, 750, 45);
-  //   test.tabuSearch();
-  // }
-  // std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
-  // for (size_t i = 0; i < 10000; i++) {
-  //   MMTPartialColoring test(k, &graph, 750, 45);
-  //   test.dsatur();
-  // }
-  // std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
-  //
-  // std::cout << "TEST" << '\n';
-  // // std::vector<int> hist0(graph.n, 0);
-  // std::vector<int> hist1(graph.n, 0);
-  // for (size_t i = 0; i < 100000; i++) {
-  //   PartialColoring temp0(k, &graph);
-  //   temp0.greedy();
-  //   PartialColoring temp1(k, &graph);
-  //   temp1.greedy();
-  //   // hist0[temp0.distanceTo(&temp1, false)]++;
-  //   hist1[temp0.distanceTo(&temp1, true)]++;
-  // }
-  //
-  // for (size_t i = 0; i < graph.n; i++) {
-  //   if (hist1[i] > 0) {
-  //     std::cout << i << ',' << hist1[i] << ' ';
-  //   }
-  // }
-  // std::cout << '\n';
+  // MMTPartialColoring col(k, &graph, L, T);
+  // col.dsatur();
+  // col.tabuSearch();
 
-  // PartialColoringCluster A(10*graph.n, graph.n, k, &graph);
+  // createCluster(arrfilename, &graph, 28, 50);
   //
-  // for (size_t i = 0; i < 10000; i++) {
+  // testCluster(arrfilename, &graph, k, 50);
+
+  // PartialColoringCluster B(arrfilename, &graph);
+
+  // B.toString(true);
+
+  for (size_t i = 1; i <= 1; i++) {
+    MMT mmt(&graph, L, T, time_limit, PS, 0.1);
+  //
+  //   mmt.setClustering(B);
+  //
+    mmt.start();
+  //
+  //   mmt.streamClustering(arrfilename);
+    documentation(av[1], &mmt, i, 4);
+  }
+
+  //
+  //
+  // PartialColoringCluster A(PS, graph.n, k, &graph);
+  //
+  // for (size_t i = 0; i < PS*50; i++) {
   //   PartialColoring temp0(k, &graph);
   //   temp0.greedy();
   //   A.feed(temp0);
+  //   PartialColoring temp1(k, &graph);
+  //   temp1.dsatur();
+  //   A.feed(temp1);
   // }
   //
-  // std::cout << "FEEDED " << '\n';
+  // A.writeToFile(arrfilename);
   //
+  // A.toString();
+
   // for (size_t i = 0; i < 10000; i++) {
   //   PartialColoring temp0(k, &graph);
   //   temp0.greedy();
@@ -473,10 +534,6 @@ int main(int argc, char **av) {
   // }
   //
   // std::cout << "TESTED" << '\n';
-  //
-  // A.writeToFile();
-  //
-  // A.toString();
 
   return 0;
 };
