@@ -428,7 +428,7 @@ int main(int argc, char **av) {
   C.crossover(&A,&B);
   C.toString();
 
-  std::cout << A.distanceTo(&B) << '\n';
+  std::cout << A.distanceTo(&B, true) << '\n';
   std::cout << A.distanceTo(&C) << '\n';
   std::cout << B.distanceTo(&C) << '\n';
 

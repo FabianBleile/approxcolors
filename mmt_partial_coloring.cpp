@@ -204,7 +204,7 @@ std::size_t PartialColoring::UInt32PairHash::operator()(const std::pair<uint32_t
 }
 
 // distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
-int PartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec){
+int PartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
   int max_cost = 0;
   for (auto& intersec : matIntersec) {
     max_cost += (int) *std::min_element(intersec.begin(), intersec.end());
@@ -212,7 +212,7 @@ int PartialColoring::approxDistance(std::vector<std::vector<double> >& matInters
   return std::max(0, max_cost - k*graph->n);
 }
 
-int PartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec){
+int PartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
   HungarianAlgorithm HungAlgo;
 	vector<int> assignment;
 
@@ -223,7 +223,7 @@ int PartialColoring::exactDistance(std::vector<std::vector<double> >& matInterse
   }
   std::cout << '\n';
 
-	return r - k*graph->n;
+	return graph->n - num_uncolored - (k*graph->n - r);
 }
 
 

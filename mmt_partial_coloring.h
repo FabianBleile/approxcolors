@@ -36,7 +36,7 @@ public:
 
   bool dsatur();
 
-  int distanceTo(PartialColoring* S, bool exact = true) ;
+  int distanceTo(PartialColoring* S, bool exact = false) ;
 
   measure evaluate() const ;
 
@@ -61,9 +61,9 @@ private:
 
   void dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::vector<int>& freedegree);
 
-  int approxDistance(std::vector<std::vector<double> >& matIntersec);
+  int approxDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored);
 
-  int exactDistance(std::vector<std::vector<double> >& matIntersec);
+  int exactDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored);
 
 };
 
