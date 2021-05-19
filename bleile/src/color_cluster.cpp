@@ -4,8 +4,8 @@
 #include <fstream>
 #include <vector>
 #include <numeric>
-#include "hungarian.h"
-#include "mmt_partial_coloring.h"
+#include "bleile/header/hungarian.h"
+#include "bleile/header/mmt_partial_coloring.h"
 
 class PartialColoringCluster {
 public:

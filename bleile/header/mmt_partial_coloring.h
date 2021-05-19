@@ -1,10 +1,10 @@
 #ifndef MMT_PARTIAL_COLORING_H_
 #define MMT_PARTIAL_COLORING_H_
 
-#include "mmt_graph.h"
+#include "bleile/header/mmt_graph.h"
 
 extern "C" {
-  #include "hungarian.h"
+  #include "bleile/header/hungarian.h"
 }
 
 #include <iostream>
@@ -91,16 +91,14 @@ private:
 
   int L, T;
 
-  std::tuple<const MMTPartialColoring*,
-        std::vector<int>*, int*,
-        const MMTPartialColoring*,
-        std::vector<int>*, int* >
-        selectParent(const MMTPartialColoring* s1,
-          const MMTPartialColoring* s2,
-          std::vector<int>* s1_c,
-          std::vector<int>* s2_c,
-          int* s1_n, int* s2_n, int cur_color
-        );
+  std::tuple<const MMTPartialColoring*,std::vector<int>*, int*,
+        const MMTPartialColoring*,std::vector<int>*, int* >
+                                  selectParent(const MMTPartialColoring* s1,
+                                                const MMTPartialColoring* s2,
+                                                std::vector<int>* s1_c,
+                                                std::vector<int>* s2_c,
+                                                int* s1_n, int* s2_n, int cur_color
+                                              );
 };
 
 #endif

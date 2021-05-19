@@ -628,3 +628,9 @@ test/dimacs/DSJC250.5.col,1/464,32,0,21415,20093,30,2,-1
 ./test/dimacs/queen16_16.col,1/464,436,0,43327,29796,17,2,-1
 ./test/dimacs/queen5_5.col,1/464,300,0,32595,32595,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1405,1405,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1472,1472,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1432,1432,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1478,1478,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1425,1425,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1391,1391,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1473,1473,5,2,-1

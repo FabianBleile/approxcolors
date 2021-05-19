@@ -2,7 +2,7 @@
 #define MMT_GRAPH_H_
 
 extern "C" {
-  #include "mmt_read.h"
+  #include "bleile/header/mmt_read.h"
 }
 
 #include <iostream>
@@ -14,6 +14,8 @@ using nodeid = uint32_t;
 class MMTGraph {
 public:
   int n, m;
+
+  char * instance;
 
   MMTGraph(int argc, char **av) ;
 

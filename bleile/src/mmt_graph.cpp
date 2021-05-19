@@ -1,6 +1,9 @@
-#include "mmt_graph.h"
+#include "bleile/header/mmt_graph.h"
 
 MMTGraph::MMTGraph(int argc, char **av) {
+  // save graph instance
+  instance = av[1];
+
   int *elist;
   read_graph(argc, av, &n, &m, &elist);
 
@@ -13,6 +16,9 @@ MMTGraph::MMTGraph(int argc, char **av) {
 }
 
 MMTGraph::MMTGraph(MMTGraph * input) {
+  n = input->n;
+  m = input->m;
+  instance = input->instance;
   adjList = input->adjList;
 }
 

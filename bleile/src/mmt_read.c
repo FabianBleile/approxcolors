@@ -12,12 +12,12 @@
 #include <getopt.h>
 #include <string.h>
 #include <assert.h>
-#include "color.h"
-#include "graph.h"
-#include "color_defs.h"
-#include "color_parms.h"
-#include "color_private.h"
-#include "mmt_read.h"
+#include "../color.h"
+#include "../graph.h"
+#include "../color_defs.h"
+#include "../color_parms.h"
+#include "../color_private.h"
+#include "../bleile/header/mmt_read.h"
 
 // static functions copied from color_main.c
 static int parseargs (int ac, char **av, COLORparms* parms);

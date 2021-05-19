@@ -3,8 +3,8 @@ extern "C" {
   #include "color_defs.h"
 }
 
-#include "mmt_graph.h"
-#include "mmt_partial_coloring.h"
+#include "bleile/header/mmt_graph.h"
+#include "bleile/header/mmt_partial_coloring.h"
 
 #include "color_cluster.cpp"
 
@@ -20,9 +20,9 @@ extern "C" {
 class MMT {
 public:
 
-  MMT(int argc, char **av, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
-   : graph(argc,av), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
-   cur_best_coloring(MMTPartialColoring(graph.n, &graph, L, T)), pGreedy(pGreedy), N(graph.n)
+  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
+   : graph(graph), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
+   cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), pGreedy(pGreedy), N(graph->n)
 
    {
     // compute lower bound
@@ -98,7 +98,7 @@ public:
     int seq_block_size = pool_size/3;
     for (size_t i = 0; i < seq_block_size; i++) {
       MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
-      if(dsatur.dsatur() || dsatur.tabuSearch()) {
+      if(dsatur.greedy() || dsatur.tabuSearch()) {
         logger.status = INIT_GREEDY;
         cur_best_coloring = dsatur;
         return;
@@ -396,60 +396,4 @@ private:
       if (columns.size() > numColOpt) columns.pop();
     }
   }
-};
-
-void documentation(char *instance, MMT* mmt, int i, int imax){
-  char filename[ ] = "mmt_documentation.txt";
-  std::ofstream doc;
-  doc.open (filename, std::fstream::app);
-  doc << instance << ',' << i << '/' << imax;
-  doc << mmt->streamLogs().rdbuf() << '\n';
-  doc.close();
-}
-
-int main(int argc, char **av) {
-
-  MMT mmt(argc, av, /*L*/ 10000,/*T*/ 45, /*time limit*/ 10, /*pool size*/ 20, /*pgreedy*/0.2);
-
-  mmt.start();
-
-  documentation(av[1], &mmt, 1, 4);
-
-  // MMTGraph g(argc, av);
-  //
-  // for (size_t i = 0; i < 1000000; i++) {
-  //   MMTPartialColoring A(5, &g, 1, 0);
-  //   A.greedy();
-  //   MMTPartialColoring B(5, &g, 1, 0);
-  //   B.greedy();
-  //
-  //   MMTPartialColoring C(5, &g, 1, 0);
-  //   C.crossover(&A,&B);
-  //
-  //   if (A.distanceTo(&B, true) < A.distanceTo(&C, true) || A.distanceTo(&B, true) <  B.distanceTo(&C, true)) {
-  //     A.toString();
-  //     B.toString();
-  //     C.toString();
-  //     std::cout << A.distanceTo(&B, true) << '\n';
-  //     std::cout << A.distanceTo(&C, true) << '\n';
-  //     std::cout << B.distanceTo(&C, true) << '\n';
-  //     std::cout << i << '\n';
-  //     break;
-  //   }
-  // }
-
-  // MMTPartialColoring D(5, &g, 1, 0);
-  // D.crossover(&B,&C);
-  // // D.toString();
-  // std::cout << B.distanceTo(&D) << '\n';
-  // std::cout << C.distanceTo(&D) << '\n';
-
-  // MMTGraph g(argc, av);
-  // PartialColoring pc(7, &g);
-  // pc.greedy();
-  // pc.toString();
-  // pc.setK(5);
-  // pc.toString();
-
-  return 0;
 };

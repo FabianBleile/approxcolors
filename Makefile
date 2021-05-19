@@ -83,6 +83,10 @@ CXXFLAGS += -g
 # Below this comment changes should be unnecessary.#
 ####################################################
 
+BLEILE_DIR=bleile
+BLEILE_HEADER=$(BLEILE_DIR)/header
+BLEILE_SRC=$(BLEILE_DIR)/src
+
 SEWELL_DIR=mwis_sewell
 SEWELL_LDFLAG=-L $(SEWELL_DIR) -lsewell
 SEWELL_LIB=$(SEWELL_DIR)/libsewell.a
@@ -121,15 +125,15 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 
 testall:
 	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), echo $(file);)
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), ./mmt $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), ./approxcolors $(file);)
 
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./mmt test/dimacs/queen5_5.col
+	./approxcolors test/dimacs/queen5_5.col
 
 testcompare:
-	./mmt test/dimacs/DSJC250.5.col
+	./approxcolors test/dimacs/DSJC250.5.col
 	./color test/dimacs/DSJC250.5.col
 
 testmyciel4:
@@ -178,8 +182,8 @@ complement: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(COMPFILES)
 dsatur: dsatur.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
 	$(LD) $(CFLAGS) -o dsatur dsatur.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
-mmt: mmt.o mmt_read.o mmt_graph.o mmt_partial_coloring.o hungarian.o graph.o color.o rounding_mode.o lpqsopt.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
-	$(CXX) $(CXXFLAGS) -o mmt mmt.o mmt_read.o mmt_graph.o mmt_partial_coloring.o hungarian.o graph.o color.o color_parms.o rounding_mode.o lpqsopt.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+approxcolors: approxcolors.o mmt.o mmt_read.o mmt_graph.o mmt_partial_coloring.o hungarian.o graph.o color.o rounding_mode.o lpqsopt.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
+	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o mmt.o mmt_read.o mmt_graph.o mmt_partial_coloring.o hungarian.o graph.o color.o color_parms.o rounding_mode.o lpqsopt.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
 queen: queen.c
 	$(CC) $(CFLAGS) -o queen queen.c -lm -lpthread
@@ -222,16 +226,18 @@ greedy.o:    greedy.c  color.h graph.h color_defs.h
 lpgurobi.o:  lpgurobi.c color.h lp.h color_defs.h
 lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
-mmt.o:			 mmt.cpp mmt_graph.h mmt_partial_coloring.h lp.h
-	$(CXX) $(CXXFLAGS) -c -o mmt.o mmt.cpp
-mmt_graph.o: mmt_graph.cpp mmt_graph.h mmt_partial_coloring.h mmt_read.h
-	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o mmt_graph.cpp
-mmt_partial_coloring.o: mmt_partial_coloring.cpp mmt_partial_coloring.h mmt_graph.h hungarian.h
-	$(CXX) $(CXXFLAGS) -c -o mmt_partial_coloring.o mmt_partial_coloring.cpp
-hungarian.o: hungarian.cpp hungarian.h
-	$(CXX) $(CXXFLAGS) -c -o hungarian.o hungarian.cpp
-mmt_read.o:	 mmt_read.c graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
-	$(LD) $(CFLAGS) -c -o mmt_read.o mmt_read.c graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+approxcolors.o:		 $(BLEILE_DIR)/approxcolors.cpp
+	$(CXX) $(CXXFLAGS) -c -o approxcolors.o $(BLEILE_DIR)/approxcolors.cpp
+mmt.o:			 $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h lp.h
+	$(CXX) $(CXXFLAGS) -c -o mmt.o $(BLEILE_SRC)/mmt.cpp
+mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_read.h
+	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o $(BLEILE_SRC)/mmt_graph.cpp
+mmt_partial_coloring.o: $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/hungarian.h
+	$(CXX) $(CXXFLAGS) -c -o mmt_partial_coloring.o $(BLEILE_SRC)/mmt_partial_coloring.cpp
+hungarian.o: $(BLEILE_SRC)/hungarian.cpp $(BLEILE_HEADER)/hungarian.h
+	$(CXX) $(CXXFLAGS) -c -o hungarian.o $(BLEILE_SRC)/hungarian.cpp
+mmt_read.o:	 $(BLEILE_SRC)/mmt_read.c graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
+	$(LD) $(CFLAGS) -c -o mmt_read.o $(BLEILE_SRC)/mmt_read.c graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 mwis.o:      mwis.c mwis.h color.h color_defs.h
 mwis_grdy.o: mwis_grdy.c color.h graph.h color_defs.h heap.h
 mwis_grb.o:  mwis_grb.c color.h lp.h color_defs.h
