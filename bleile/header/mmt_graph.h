@@ -2,7 +2,7 @@
 #define MMT_GRAPH_H_
 
 extern "C" {
-  #include "bleile/header/mmt_read.h"
+  #include "bleile/utils/mmt_read.h"
 }
 
 #include <iostream>

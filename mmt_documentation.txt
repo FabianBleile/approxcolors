@@ -634,3 +634,5 @@ test/dimacs/queen5_5.col,1/464,10,0,1478,1478,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1425,1425,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1391,1391,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1473,1473,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1454,1454,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1448,1448,5,2,-1

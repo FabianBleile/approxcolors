@@ -1,4 +1,4 @@
-#include "src/mmt.cpp"
+#include "header/mmt.h"
 
 void documentation(char *instance, MMT* mmt, int i, int imax){
   char filename[ ] = "mmt_documentation.txt";

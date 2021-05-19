@@ -2,9 +2,10 @@
 #define MMT_PARTIAL_COLORING_H_
 
 #include "bleile/header/mmt_graph.h"
+#include "bleile/utils/pair_hasher.hpp"
 
 extern "C" {
-  #include "bleile/header/hungarian.h"
+  #include "bleile/utils/hungarian.h"
 }
 
 #include <iostream>
@@ -51,10 +52,6 @@ public:
   int getNumColors() const ;
 
   void toString(int maxLines = 14) const ;
-
-  struct UInt32PairHash {
-    std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const ;
-  };
 
 private:
   int dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const ;

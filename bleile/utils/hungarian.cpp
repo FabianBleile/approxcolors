@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <cfloat> // for DBL_MAX
 #include <cmath>  // for fabs()
-#include "bleile/header/hungarian.h"
+#include "bleile/utils/hungarian.h"
 
 
 HungarianAlgorithm::HungarianAlgorithm(){}

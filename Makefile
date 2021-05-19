@@ -86,6 +86,7 @@ CXXFLAGS += -g
 BLEILE_DIR=bleile
 BLEILE_HEADER=$(BLEILE_DIR)/header
 BLEILE_SRC=$(BLEILE_DIR)/src
+BLEILE_UTILS=$(BLEILE_DIR)/utils
 
 SEWELL_DIR=mwis_sewell
 SEWELL_LDFLAG=-L $(SEWELL_DIR) -lsewell
@@ -226,18 +227,18 @@ greedy.o:    greedy.c  color.h graph.h color_defs.h
 lpgurobi.o:  lpgurobi.c color.h lp.h color_defs.h
 lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
-approxcolors.o:		 $(BLEILE_DIR)/approxcolors.cpp
+approxcolors.o:		 $(BLEILE_DIR)/approxcolors.cpp $(BLEILE_HEADER)/mmt.h
 	$(CXX) $(CXXFLAGS) -c -o approxcolors.o $(BLEILE_DIR)/approxcolors.cpp
-mmt.o:			 $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h lp.h
+mmt.o:			 $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h lp.h
 	$(CXX) $(CXXFLAGS) -c -o mmt.o $(BLEILE_SRC)/mmt.cpp
-mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_read.h
+mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_UTILS)/mmt_read.h
 	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o $(BLEILE_SRC)/mmt_graph.cpp
-mmt_partial_coloring.o: $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/hungarian.h
+mmt_partial_coloring.o: $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.h
 	$(CXX) $(CXXFLAGS) -c -o mmt_partial_coloring.o $(BLEILE_SRC)/mmt_partial_coloring.cpp
-hungarian.o: $(BLEILE_SRC)/hungarian.cpp $(BLEILE_HEADER)/hungarian.h
-	$(CXX) $(CXXFLAGS) -c -o hungarian.o $(BLEILE_SRC)/hungarian.cpp
-mmt_read.o:	 $(BLEILE_SRC)/mmt_read.c graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
-	$(LD) $(CFLAGS) -c -o mmt_read.o $(BLEILE_SRC)/mmt_read.c graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+hungarian.o: $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
+	$(CXX) $(CXXFLAGS) -c -o hungarian.o $(BLEILE_UTILS)/hungarian.cpp
+mmt_read.o:	 $(BLEILE_UTILS)/mmt_read.c graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
+	$(LD) $(CFLAGS) -c -o mmt_read.o $(BLEILE_UTILS)/mmt_read.c graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 mwis.o:      mwis.c mwis.h color.h color_defs.h
 mwis_grdy.o: mwis_grdy.c color.h graph.h color_defs.h heap.h
 mwis_grb.o:  mwis_grb.c color.h lp.h color_defs.h
