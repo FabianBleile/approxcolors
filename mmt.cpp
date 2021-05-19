@@ -398,85 +398,52 @@ private:
   }
 };
 
-void documentation(char *instance, MMT* mmt){
+void documentation(char *instance, MMT* mmt, int i, int imax){
   char filename[ ] = "mmt_documentation.txt";
   std::ofstream doc;
   doc.open (filename, std::fstream::app);
-  doc << instance << ',';
+  doc << instance << ',' << i << '/' << imax;
   doc << mmt->streamLogs().rdbuf() << '\n';
   doc.close();
 }
 
 int main(int argc, char **av) {
 
-  MMT mmt(argc, av, /*L*/ 1000,/*T*/ 45, /*time limit*/ 5, /*pool size*/ 20, /*pgreedy*/0.2);
+  // MMT mmt(argc, av, /*L*/ 10000,/*T*/ 45, /*time limit*/ 300, /*pool size*/ 20, /*pgreedy*/0.2);
+  //
+  // mmt.start();
+  //
+  // documentation(av[1], &mmt, 1, 4);
 
-  mmt.start();
+  MMTGraph g(argc, av);
 
-  std::cout << "CONE WITH CALCULATING" << '\n';
+  MMTPartialColoring A(5, &g, 1, 0);
+  A.greedy();
+  A.toString();
+  MMTPartialColoring B(5, &g, 1, 0);
+  B.greedy();
+  B.toString();
 
-  documentation(av[1], &mmt);
+  MMTPartialColoring C(5, &g, 1, 0);
+  C.crossover(&A,&B);
+  C.toString();
 
-  std::cout << "DONE" << '\n';
+  std::cout << A.distanceTo(&B) << '\n';
+  std::cout << A.distanceTo(&C) << '\n';
+  std::cout << B.distanceTo(&C) << '\n';
 
+  // MMTPartialColoring D(5, &g, 1, 0);
+  // D.crossover(&B,&C);
+  // // D.toString();
+  // std::cout << B.distanceTo(&D) << '\n';
+  // std::cout << C.distanceTo(&D) << '\n';
 
-  // MMTGraph graph(argc,av);
-  //
-  // clock_t t = clock();
-  //
-  // int k = 36;
-  //
-  // for (size_t i = 0; i < 10000; i++) {
-  //   MMTPartialColoring test(k, &graph, 750, 45);
-  //   test.tabuSearch();
-  // }
-  // std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
-  // for (size_t i = 0; i < 10000; i++) {
-  //   MMTPartialColoring test(k, &graph, 750, 45);
-  //   test.dsatur();
-  // }
-  // std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
-  //
-  // std::cout << "TEST" << '\n';
-  // // std::vector<int> hist0(graph.n, 0);
-  // std::vector<int> hist1(graph.n, 0);
-  // for (size_t i = 0; i < 100000; i++) {
-  //   PartialColoring temp0(k, &graph);
-  //   temp0.greedy();
-  //   PartialColoring temp1(k, &graph);
-  //   temp1.greedy();
-  //   // hist0[temp0.distanceTo(&temp1, false)]++;
-  //   hist1[temp0.distanceTo(&temp1, true)]++;
-  // }
-  //
-  // for (size_t i = 0; i < graph.n; i++) {
-  //   if (hist1[i] > 0) {
-  //     std::cout << i << ',' << hist1[i] << ' ';
-  //   }
-  // }
-  // std::cout << '\n';
-
-  // PartialColoringCluster A(10*graph.n, graph.n, k, &graph);
-  //
-  // for (size_t i = 0; i < 10000; i++) {
-  //   PartialColoring temp0(k, &graph);
-  //   temp0.greedy();
-  //   A.feed(temp0);
-  // }
-  //
-  // std::cout << "FEEDED " << '\n';
-  //
-  // for (size_t i = 0; i < 10000; i++) {
-  //   PartialColoring temp0(k, &graph);
-  //   temp0.greedy();
-  //   A.test(temp0);
-  // }
-  //
-  // std::cout << "TESTED" << '\n';
-  //
-  // A.writeToFile();
-  //
-  // A.toString();
+  // MMTGraph g(argc, av);
+  // PartialColoring pc(7, &g);
+  // pc.greedy();
+  // pc.toString();
+  // pc.setK(5);
+  // pc.toString();
 
   return 0;
 };

@@ -36,9 +36,11 @@ public:
 
   bool dsatur();
 
-  int distanceTo(PartialColoring* S, bool exact = false) ;
+  int distanceTo(PartialColoring* S, bool exact = true) ;
 
   measure evaluate() const ;
+
+  void setK(int k);
 
   void setColor(nodeid u, color c) ;
 

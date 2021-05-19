@@ -132,6 +132,20 @@ measure PartialColoring::evaluate() const {
   // return uncolored.size();
 }
 
+void PartialColoring::setK(int k){
+  if (k > this->k) {
+    std::cout << "Diese Funktionalität muss bei Bedarf noch implementiert werden" << '\n';
+  } else if (k < this->k){
+    this->k = k;
+    uncolored.clear();
+    for (size_t i = 0; i < colors.size(); i++) {
+      if (colors[i] >= k) {
+        setColor(i, k);
+      }
+    }
+  }
+}
+
 void PartialColoring::setColor(nodeid u, color c){
   if(c == k) uncolored.insert(u);
   else uncolored.erase(u);
@@ -196,6 +210,11 @@ int PartialColoring::exactDistance(std::vector<std::vector<double> >& matInterse
 	vector<int> assignment;
 
 	double r = HungAlgo.Solve(matIntersec, assignment);
+
+  for (size_t i = 0; i < assignment.size(); i++) {
+    std::cout << assignment[i] << ',' << graph->n - matIntersec[i][assignment[i]] << '\t';
+  }
+  std::cout << '\n';
 
 	return r - k*graph->n;
 }
