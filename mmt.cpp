@@ -409,28 +409,34 @@ void documentation(char *instance, MMT* mmt, int i, int imax){
 
 int main(int argc, char **av) {
 
-  // MMT mmt(argc, av, /*L*/ 10000,/*T*/ 45, /*time limit*/ 300, /*pool size*/ 20, /*pgreedy*/0.2);
+  MMT mmt(argc, av, /*L*/ 10000,/*T*/ 45, /*time limit*/ 10, /*pool size*/ 20, /*pgreedy*/0.2);
+
+  mmt.start();
+
+  documentation(av[1], &mmt, 1, 4);
+
+  // MMTGraph g(argc, av);
   //
-  // mmt.start();
+  // for (size_t i = 0; i < 1000000; i++) {
+  //   MMTPartialColoring A(5, &g, 1, 0);
+  //   A.greedy();
+  //   MMTPartialColoring B(5, &g, 1, 0);
+  //   B.greedy();
   //
-  // documentation(av[1], &mmt, 1, 4);
-
-  MMTGraph g(argc, av);
-
-  MMTPartialColoring A(5, &g, 1, 0);
-  A.greedy();
-  A.toString();
-  MMTPartialColoring B(5, &g, 1, 0);
-  B.greedy();
-  B.toString();
-
-  MMTPartialColoring C(5, &g, 1, 0);
-  C.crossover(&A,&B);
-  C.toString();
-
-  std::cout << A.distanceTo(&B, true) << '\n';
-  std::cout << A.distanceTo(&C) << '\n';
-  std::cout << B.distanceTo(&C) << '\n';
+  //   MMTPartialColoring C(5, &g, 1, 0);
+  //   C.crossover(&A,&B);
+  //
+  //   if (A.distanceTo(&B, true) < A.distanceTo(&C, true) || A.distanceTo(&B, true) <  B.distanceTo(&C, true)) {
+  //     A.toString();
+  //     B.toString();
+  //     C.toString();
+  //     std::cout << A.distanceTo(&B, true) << '\n';
+  //     std::cout << A.distanceTo(&C, true) << '\n';
+  //     std::cout << B.distanceTo(&C, true) << '\n';
+  //     std::cout << i << '\n';
+  //     break;
+  //   }
+  // }
 
   // MMTPartialColoring D(5, &g, 1, 0);
   // D.crossover(&B,&C);

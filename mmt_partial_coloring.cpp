@@ -209,7 +209,7 @@ int PartialColoring::approxDistance(std::vector<std::vector<double> >& matInters
   for (auto& intersec : matIntersec) {
     max_cost += (int) *std::min_element(intersec.begin(), intersec.end());
   }
-  return std::max(0, max_cost - k*graph->n);
+  return std::max(0, graph->n - num_uncolored - (k*graph->n - max_cost));
 }
 
 int PartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
@@ -218,10 +218,10 @@ int PartialColoring::exactDistance(std::vector<std::vector<double> >& matInterse
 
 	double r = HungAlgo.Solve(matIntersec, assignment);
 
-  for (size_t i = 0; i < assignment.size(); i++) {
-    std::cout << assignment[i] << ',' << graph->n - matIntersec[i][assignment[i]] << '\t';
-  }
-  std::cout << '\n';
+  // for (size_t i = 0; i < assignment.size(); i++) {
+  //   std::cout << assignment[i] << ',' << graph->n - matIntersec[i][assignment[i]] << '\t';
+  // }
+  // std::cout << '\n';
 
 	return graph->n - num_uncolored - (k*graph->n - r);
 }
