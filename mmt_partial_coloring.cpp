@@ -28,11 +28,18 @@ int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
 
   // populate intersection matrix
   std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
+  int num_uncolored = 0;
   for (size_t i = 0; i < colors.size(); i++) {
     matIntersec[colors[i]][S->colors[i]]--;
+    if (S->colors[i] == k) num_uncolored++;
   }
-
-  return exact ? exactDistance(matIntersec) : approxDistance(matIntersec);
+  num_uncolored += k*graph->n - std::accumulate(matIntersec[k].begin(), matIntersec[k].end()-1, 0);
+  // remove uncolored nodes from distance calculation
+  matIntersec.pop_back();
+  for (auto& vIntersec : matIntersec) {
+    vIntersec.pop_back();
+  }
+  return exact ? exactDistance(matIntersec, num_uncolored) : approxDistance(matIntersec, num_uncolored);
 }
 
 // clear (k+1)-st bucket in a greedy way
