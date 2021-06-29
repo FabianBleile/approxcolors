@@ -22,6 +22,7 @@ void MMT::start(){
   } else {
     cur_best_coloring.greedy();
   }
+  cur_best_coloring.checkColoring();
   cur_best_coloring.toString();
   logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
 }
@@ -153,7 +154,7 @@ void MMT::EADecision(int k) {
       updatePool(offspring, &(*parent_1), pool, poolSimilarity, priority);
     }
     iter++;
-    if (!(iter % 2000)) {
+    if (!(iter % 500)) {
       std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
       printPoolDistance(pool);
     }
