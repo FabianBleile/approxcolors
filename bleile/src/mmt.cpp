@@ -105,6 +105,9 @@ void MMT::EADecision(int k) {
   while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec) {
     auto parent_1 = std::next(std::begin(pool), (int) rand() % pool.size());
     auto parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
+    while (parent_2 == parent_1) {
+      parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
+    }
 
     MMTPartialColoring offspring(k, &graph, L, T);
     // generate offspring and if it is not already a solution improve by calling tabuSearch on it
@@ -141,15 +144,18 @@ void MMT::EADecision(int k) {
     }
 
     // delete worst parent and insert child to pool
+    //std::cout << offspring.evaluate() << " : " << parent_1->evaluate() << " : " << parent_2->evaluate() << " ";
     if (parent_1->evaluate() <= parent_2->evaluate()) {
+      //std::cout << "(2) | \t |";
       updatePool(offspring, &(*parent_2), pool, poolSimilarity, priority);
     } else {
+      //std::cout << "(1) | \t |";
       updatePool(offspring, &(*parent_1), pool, poolSimilarity, priority);
     }
     iter++;
     if (!(iter % 500)) {
-      // std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
-      // printPoolDistance(pool);
+      std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
+      printPoolDistance(pool);
     }
 
     logger.totNumOffsprings++;
@@ -313,7 +319,6 @@ void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded
 }
 
 void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
-  assert(pool.size() != 0);
   measure sum = 0;
   measure best = std::numeric_limits<measure>::max();
   for (auto& individual : pool) {

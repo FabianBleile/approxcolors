@@ -636,4 +636,10 @@ test/dimacs/queen5_5.col,1/464,10,0,1391,1391,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1473,1473,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1454,1454,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1448,1448,5,2,-1
+
+// tabuSearch test
 test/dimacs/DSJC250.5.col,1/464,28,0,1726,675,30,2,-1
+test/dimacs/DSJC250.5.col,1/464,37,0,25713,20490,30,2,-1
+test/dimacs/DSJC250.5.col,1/464,3,0,2654,2042,32,2,-1
+test/dimacs/DSJC250.5.col,1/464,45,0,30801,20595,30,2,-1
+test/dimacs/DSJC250.5.col,1/464,62,0,4063,1967,30,2,-1
