@@ -112,8 +112,9 @@ void MMT::EADecision(int k) {
     }
     iter++;
     if (!(iter % 500)) {
-      // std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
-      // printPoolDistance(pool);
+      std::cout << "Anzahl Iterationen " << iter << '\t';
+      printPoolFitness(pool);
+      printPoolDistance(pool);
     }
 
     logger.totNumOffsprings++;
