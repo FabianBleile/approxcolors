@@ -1,10 +1,10 @@
 #include "header/mmt.h"
 
-void documentation(char *instance, MMT* mmt, int i, int imax){
+void documentation(std::string instance, MMT* mmt, int i, int imax){
   char filename[ ] = "mmt_documentation.txt";
   std::ofstream doc;
   doc.open (filename, std::fstream::app);
-  doc << instance << ',' << i << '/' << imax;
+  doc << instance << ',' << i << '/' << imax <<',';
   doc << mmt->streamLogs().rdbuf() << '\n';
   doc.close();
 }
@@ -18,51 +18,6 @@ int main(int argc, char **av) {
   mmt.start();
 
   documentation(g.instance, &mmt, 1, 4);
-
-  /*
-  MMTPartialColoring D(30, &g, 10000000, 45);
-  D.dsatur();
-  clock_t t = clock();
-  D.tabuSearch();
-  std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
-  D.toString();
-  */
-
-  // MMTGraph g(argc, av);
-  //
-  // for (size_t i = 0; i < 1000000; i++) {
-  //   MMTPartialColoring A(5, &g, 1, 0);
-  //   A.greedy();
-  //   MMTPartialColoring B(5, &g, 1, 0);
-  //   B.greedy();
-  //
-  //   MMTPartialColoring C(5, &g, 1, 0);
-  //   C.crossover(&A,&B);
-  //
-  //   if (A.distanceTo(&B, true) < A.distanceTo(&C, true) || A.distanceTo(&B, true) <  B.distanceTo(&C, true)) {
-  //     A.toString();
-  //     B.toString();
-  //     C.toString();
-  //     std::cout << A.distanceTo(&B, true) << '\n';
-  //     std::cout << A.distanceTo(&C, true) << '\n';
-  //     std::cout << B.distanceTo(&C, true) << '\n';
-  //     std::cout << i << '\n';
-  //     break;
-  //   }
-  // }
-
-  // MMTPartialColoring D(5, &g, 1, 0);
-  // D.crossover(&B,&C);
-  // // D.toString();
-  // std::cout << B.distanceTo(&D) << '\n';
-  // std::cout << C.distanceTo(&D) << '\n';
-
-  // MMTGraph g(argc, av);
-  // PartialColoring pc(7, &g);
-  // pc.greedy();
-  // pc.toString();
-  // pc.setK(5);
-  // pc.toString();
 
   return 0;
 };

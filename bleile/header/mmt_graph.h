@@ -8,6 +8,7 @@ extern "C" {
 #include <iostream>
 #include <vector>
 #include <unordered_set>
+#include <sstream>
 
 using nodeid = uint32_t;
 
@@ -15,7 +16,7 @@ class MMTGraph {
 public:
   int n, m;
 
-  char * instance;
+  std::string instance;
 
   MMTGraph(int argc, char **av) ;
 

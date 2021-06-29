@@ -2,7 +2,12 @@
 
 MMTGraph::MMTGraph(int argc, char **av) {
   // save graph instance
-  instance = av[1];
+  char * file = av[1];
+  std::stringstream filestream;
+  filestream << file;
+  while(std::getline(filestream, instance, '/')){
+   // loop for last segment delimited by '/' there instance name sits
+  }
 
   int *elist;
   read_graph(argc, av, &n, &m, &elist);
