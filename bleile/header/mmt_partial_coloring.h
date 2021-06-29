@@ -82,6 +82,8 @@ public:
 
   void lockColoring() ;
 
+  void checkColoring() ;
+
   std::vector<std::unordered_set<nodeid> > color_classes;
 
 private:

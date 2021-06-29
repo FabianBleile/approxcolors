@@ -368,7 +368,7 @@ bool MMTPartialColoring::tabuSearch(){
     // perform move (u,h)
     moveToColor(u, h);
     // add move to TabuList
-    tabuList[u][h] = it + L;
+    tabuList[u][h] = it + T;
   }
 
   return greedy();
@@ -415,7 +415,7 @@ bool MMTPartialColoring::tabuSearchSimplified(){
     // perform move (u,h)
     moveToColor(u, h);
     // add move to TabuList
-    tabuList[u][h] = it + L;
+    tabuList[u][h] = it + T;
   }
 
   return greedy();
@@ -451,4 +451,18 @@ void MMTPartialColoring::lockColoring(){
   for (size_t i = 0; i < colors.size(); i++) {
     if (colors[i] < k) color_classes[colors[i]].insert(i);
   }
+}
+
+void MMTPartialColoring::checkColoring(){
+  lockColoring();
+  for (auto cclass : color_classes) {
+    for (auto u : cclass) {
+      for (auto w : cclass) {
+        if (u != w && graph->isAdj(u, w)) {
+          std::cout << "ERROR - THIS COLORING IS NOT LEGAL!!!" << '\n';
+        }
+      }
+    }
+  }
+  std::cout << "CALCULATED COLORING IS LEGAL" << '\n';
 }
