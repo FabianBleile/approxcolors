@@ -22,6 +22,7 @@ void MMT::start(){
   } else {
     cur_best_coloring.greedy();
   }
+  cur_best_coloring.checkColoring();
   cur_best_coloring.toString();
   logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
 }

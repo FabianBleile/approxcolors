@@ -636,10 +636,27 @@ test/dimacs/queen5_5.col,1/464,10,0,1391,1391,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1473,1473,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1454,1454,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1448,1448,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1406,1406,5,2,-1
+test/dimacs/C2000.9.c.col,1/464,954,0,1503,89,507,2,-1
 
-// tabuSearch test
-test/dimacs/DSJC250.5.col,1/464,28,0,1726,675,30,2,-1
-test/dimacs/DSJC250.5.col,1/464,37,0,25713,20490,30,2,-1
-test/dimacs/DSJC250.5.col,1/464,3,0,2654,2042,32,2,-1
-test/dimacs/DSJC250.5.col,1/464,45,0,30801,20595,30,2,-1
-test/dimacs/DSJC250.5.col,1/464,62,0,4063,1967,30,2,-1
+// großer test /*L*/ 1000,/*T*/ 45, /*time limit*/ 30, /*pool size*/ 20, /*pgreedy*/0.2
+test/dimacs/DSJC250.5.col,1/464,34,0,2153,672,30,2,-1
+./test/dimacs/DSJC250.5.col,1/464,32,0,21966,20443,30,2,-1
+test/dimacs/DSJC250.5.col,1/464,30,0,71762,71762,37,2,-1
+test/dimacs/DSJC250.5.col,1/464,30,0,29844,29401,31,2,-1
+test/dimacs/DSJC250.5.col,1/464,30,0,29428,29094,31,2,-1
+test/dimacs/DSJC250.5.col,1/464,49,0,4966,2966,32,2,-1
+test/dimacs/DSJC250.5.col,1/464,46,0,4650,2949,32,2,-1
+test/dimacs/DSJC250.5.col,1/464,30,0,29772,29622,31,2,-1
+test/dimacs/DSJC250.5.col,1/464,31,0,31478,30257,31,2,-1
+test/dimacs/DSJC250.5.col,1/464,30,0,30625,30107,31,2,-1
+test/dimacs/DSJC250.5.col,1/464,31,0,30278,28442,31,2,-1
+test/dimacs/DSJC250.5.col,1/464,32,0,3318,3081,32,2,-1
+test/dimacs/DSJC250.5.col,1/464,41,0,4866,3536,28,2,-1
+test/dimacs/DSJC250.5.col,1/464,32,0,3819,3522,28,2,-1
+test/dimacs/DSJC1000.5.col,1/464,69,0,2674,1232,88,2,-1
+test/dimacs/DSJC1000.5.col,1/464,57,0,2222,1233,88,2,-1
+test/dimacs/DSJC1000.1.col,1/464,31,0,3924,3776,21,2,-1
+test/dimacs/DSJC1000.1.col,1/464,146,0,16744,13675,20,2,-1
+test/dimacs/R1000.1c.col,1/464,122,0,3010,3010,101,2,-1
+test/dimacs/DSJC250.9.col,1/464,167,0,13294,9545,72,2,-1
