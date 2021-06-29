@@ -370,6 +370,8 @@ bool MMTPartialColoring::tabuSearch(){
     // add move to TabuList
     tabuList[u][h] = it + L;
   }
+
+  return greedy();
 }
 
 // Mutation MMT
@@ -415,6 +417,8 @@ bool MMTPartialColoring::tabuSearchSimplified(){
     // add move to TabuList
     tabuList[u][h] = it + L;
   }
+
+  return greedy();
 }
 
 // clear (k+1)-st bucket in a greedy way
