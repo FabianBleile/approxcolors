@@ -39,6 +39,7 @@ int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
   for (auto& vIntersec : matIntersec) {
     vIntersec.pop_back();
   }
+
   return exact ? exactDistance(matIntersec, num_uncolored) : approxDistance(matIntersec, num_uncolored);
 }
 
@@ -153,6 +154,7 @@ void PartialColoring::setK(int k){
   }
 }
 
+// requires move to not result in any conflicts
 void PartialColoring::setColor(nodeid u, color c){
   if(c == k) uncolored.insert(u);
   else uncolored.erase(u);
@@ -320,79 +322,54 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
 // Mutation
 // set a pair (node, color) tabu for T steps
 bool MMTPartialColoring::tabuSearch(){
-  // Umleitung aktiv
-  // return tabuSearchSimplified();
+
+  /*
+    Laufzeitüberlegung aktuell:
+      - zufälligen Knoten wählen O(n)
+      - costVect aufbauen für init O(k), populate O(delta), calculate h 2*O(k)
+      - Fall Schritt tabu: O(delta)
+    => O(n + delta + 3*k)
+  */
 
   assert(L>0 && T>0);
   assert(color_classes.size() == 0);
-  std::queue<std::pair<nodeid, color> > tabuQueue;
-  std::unordered_set<std::pair<nodeid, color>, UInt32PairHash> tabuList;
 
-  std::pair<MMTPartialColoring, measure > local_best = std::make_pair(*this, evaluate());
+  // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
+  std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
 
-  for (size_t i = 0; i < L; i++) {
+  for (size_t it = 0; it < L; it++) {
     // solution discovered ? if yes break and return
     if (uncolored.empty()) break;
-
     // choose u from random vect
-    assert(uncolored.size() != 0);
     auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
     nodeid u = *random_it;
 
-    // color u with first available color if possible
-    color h = findMinAvailableColor(u);
-
-    // in case it is the new solution has better fitness for any function I considered by now
-    // so we can just add u to that color and continue tabu search with a next random uncolored node
-    if (h != k)
-    {
-      setColor(u, h);
-    }
-    // h = k iff there is no free color available for u
-    // assert for every neighbor j is f(S_j) >= f(S*)
-    else
-    {
-      //explore neighborhood for every color 0 to k-1
-      std::vector<int> costs(k, -graph->getDegree(u));
-      for (const auto &v : *graph->getNeighbors(u)) if(colors[v] != k) costs[colors[v]] += graph->getDegree(v);
-      h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-
-      // If (node, color) is tabu then search for best not tabu color
-      if (tabuList.find(std::make_pair(u, h)) != tabuList.end()) {
-        auto it = costs.begin() - 1;
-        std::generate(costs.begin(), costs.end(), [&] () mutable {
-          it++;
-          if (tabuList.find(std::make_pair(u, h)) != tabuList.end()) { // is tabu
-            return std::numeric_limits<int>::max();
-          } else {
-            return *it;
-          }
-        });
-        color temp_h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-
-        // is any color not tabu ? if yes update target color
-        // else proceed with previously calculated tabued color
-        if (costs[temp_h] < std::numeric_limits<int>::max()) {
-          h = temp_h;
-        }
+    // init and populate cost vect, explore neighborhood for every color 0 to k-1
+    // high enough constant to not use tabued moves
+    color h = -1;
+    int K = graph->n * graph->n;
+    std::vector<int> costs(k, 0);
+    for (const auto &v : *graph->getNeighbors(u)) {
+      if(colors[v] != k) {
+        costs[colors[v]] += graph->getDegree(v);
       }
-
-      assert(h < k); // at this point we want to add u to a color (color h is the set of all uncolored vertices)
-      moveToColor(u, h);
     }
-
-    // std::cout << "(node, color) : " << u << " , " << h << '\n';
-
-    tabuList.insert(std::make_pair(u, h));
-    tabuQueue.push(std::make_pair(u, h));
-
-    if (i >= T) {
-      tabuList.erase(tabuQueue.front());
-      tabuQueue.pop();
+    for (color c = 0; c < k; c++) {
+      if (costs[c] == 0) {
+        h = c;
+        goto color_found;
+      } else if (tabuList[u][c] >= it) {
+        costs[c] += K;
+      }
     }
+    h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+
+  color_found:
+    // perform move (u,h)
+    moveToColor(u, h);
+    // add move to TabuList
+    tabuList[u][h] = it + L;
   }
-
-  return greedy();
 }
 
 // Mutation MMT
@@ -401,45 +378,43 @@ bool MMTPartialColoring::tabuSearch(){
 bool MMTPartialColoring::tabuSearchSimplified(){
   assert(L>0 && T>0);
   assert(color_classes.size() == 0);
-  std::queue<nodeid > tabuQueue;
-  std::unordered_set<nodeid> tabuList;
 
-  for (size_t i = 0; i < L; i++) {
+  // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
+  std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
+
+  for (size_t it = 0; it < L; it++) {
     // solution discovered ? if yes break and return
-    if (uncolored.size() == 0) break;
+    if (uncolored.empty()) break;
+    // choose u from random vect
+    auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
+    nodeid u = *random_it;
 
-    // collect non tabu nodes
-    nodeid u = -1;
-    std::vector<nodeid> nonTabuNodes;
-    for (auto id : uncolored) {
-      if (tabuList.find(id) != tabuList.end())
-        nonTabuNodes.push_back(id);
-    }
-
-    // choose non tabu node at random or random uncolored node
-    if (!nonTabuNodes.empty()) {
-      u = *std::next(std::begin(nonTabuNodes), (int) rand() % nonTabuNodes.size());
-    } else {
-      u = *std::next(std::begin(uncolored), (int) rand() % uncolored.size());
-    }
-
-    //explore neighborhood for every color 0 to k-1
+    // init and populate cost vect, explore neighborhood for every color 0 to k-1
+    // high enough constant to not use tabued moves
+    color h = -1;
+    int K = graph->n * graph->n;
     std::vector<int> costs(k, 0);
-    for (const auto &v : *graph->getNeighbors(u)) if(colors[v] != k) costs[colors[v]] += graph->getDegree(v);
-    color h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-
-    moveToColor(u, h);
-
-    tabuList.insert(u);
-    tabuQueue.push(u);
-
-    if (i >= T) {
-      tabuList.erase(tabuQueue.front());
-      tabuQueue.pop();
+    for (const auto &v : *graph->getNeighbors(u)) {
+      if(colors[v] != k) {
+        costs[colors[v]]++;
+      }
     }
-  }
+    for (color c = 0; c < k; c++) {
+      if (costs[c] == 0) {
+        h = c;
+        goto color_found;
+      } else if (tabuList[u][c] >= it) {
+        costs[c] += K;
+      }
+    }
+    h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
 
-  return greedy();
+  color_found:
+    // perform move (u,h)
+    moveToColor(u, h);
+    // add move to TabuList
+    tabuList[u][h] = it + L;
+  }
 }
 
 // clear (k+1)-st bucket in a greedy way

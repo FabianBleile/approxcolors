@@ -636,3 +636,9 @@ test/dimacs/queen5_5.col,1/464,10,0,1391,1391,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1473,1473,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1454,1454,5,2,-1
 test/dimacs/queen5_5.col,1/464,10,0,1448,1448,5,2,-1
+test/dimacs/queen5_5.col,1/464,10,0,1406,1406,5,2,-1
+test/dimacs/C2000.9.c.col,1/464,954,0,1503,89,507,2,-1
+
+// großer test /*L*/ 1000,/*T*/ 45, /*time limit*/ 30, /*pool size*/ 20, /*pgreedy*/0.2
+test/dimacs/DSJC250.5.col,1/464,34,0,2153,672,30,2,-1
+./test/dimacs/DSJC250.5.col,1/464,32,0,21966,20443,30,2,-1

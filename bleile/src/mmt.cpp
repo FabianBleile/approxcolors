@@ -51,7 +51,7 @@ void MMT::EADecision(int k) {
   //                  ( #unclored vertices , fitness )
   std::unordered_set<std::pair<int, measure>, UInt32PairHash> poolSimilarity;
 
-  // priority vector : for every vertex keeps track of the total number this
+  // priority vector : for every vertex keeps track of the total times this
   //                   vertex is left uncolored in the current pool
   std::vector<int> priority(graph.n, -pool_size);
 
@@ -60,43 +60,7 @@ void MMT::EADecision(int k) {
   std::vector<MMTPartialColoring> pool;
 
   // apply different initialization algorithms on the pool
-  // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
-
-  // DSATUR Block
-  int dsatur_block_size = pool_size/3;
-  for (size_t i = 0; i < dsatur_block_size; i++) {
-    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
-    if(dsatur.dsatur() || dsatur.tabuSearch()) {
-      logger.status = INIT_DSATUR;
-      cur_best_coloring = dsatur;
-      return;
-    }
-    insertPool(dsatur, pool, poolSimilarity, priority);
-  }
-
-  // SEQ Block
-  int seq_block_size = pool_size/3;
-  for (size_t i = 0; i < seq_block_size; i++) {
-    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
-    if(dsatur.greedy() || dsatur.tabuSearch()) {
-      logger.status = INIT_GREEDY;
-      cur_best_coloring = dsatur;
-      return;
-    }
-    insertPool(dsatur, pool, poolSimilarity, priority);
-  }
-
-  // TABU SEARCH Block
-  int tabusearch_block_size = pool_size - seq_block_size - dsatur_block_size;
-  for (size_t i = 0; i < tabusearch_block_size; i++) {
-    MMTPartialColoring tabusearch = MMTPartialColoring(k, &graph, L, T);
-    if(tabusearch.tabuSearch()) {
-      logger.status = INIT_TABU;
-      cur_best_coloring = tabusearch;
-      return;
-    }
-    insertPool(tabusearch, pool, poolSimilarity, priority);
-  }
+  if(initPool(k, pool, priority, poolSimilarity, pool_size)) return;
 
   // printPoolDistance(pool);
 
@@ -158,6 +122,129 @@ void MMT::EADecision(int k) {
   logger.status = EA_TIME_OUT;
   return;
 }
+
+MMTPartialColoring* MMT::getColoring(){
+  return &cur_best_coloring;
+}
+
+std::stringstream MMT::streamLogs(){
+  std::stringstream logs;
+  logs << logger.status << ',';
+  logs << logger.totTimeInSec << ',' << logger.lastItTimeInSec << ',';
+  logs << logger.totNumOffsprings << ',' << logger.lastItNumOffsprings << ',';
+  logs << logger.UB << ',' << logger.LB << ',';
+  logs << logger.colOpt;
+  return logs;
+}
+
+bool MMT::initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, int pool_size){
+  // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
+
+  // DSATUR Block
+  int dsatur_block_size = pool_size/3;
+  for (size_t i = 0; i < dsatur_block_size; i++) {
+    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
+    if(dsatur.dsatur() || dsatur.tabuSearch()) {
+      logger.status = INIT_DSATUR;
+      cur_best_coloring = dsatur;
+      return true;
+    }
+    insertPool(dsatur, pool, poolSimilarity, priority);
+  }
+
+  // SEQ Block
+  int seq_block_size = pool_size/3;
+  for (size_t i = 0; i < seq_block_size; i++) {
+    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
+    if(dsatur.greedy() || dsatur.tabuSearch()) {
+      logger.status = INIT_GREEDY;
+      cur_best_coloring = dsatur;
+      return true;
+    }
+    insertPool(dsatur, pool, poolSimilarity, priority);
+  }
+
+  // TABU SEARCH Block
+  int tabusearch_block_size = pool_size - seq_block_size - dsatur_block_size;
+  for (size_t i = 0; i < tabusearch_block_size; i++) {
+    MMTPartialColoring tabusearch = MMTPartialColoring(k, &graph, L, T);
+    if(tabusearch.tabuSearch()) {
+      logger.status = INIT_TABU;
+      cur_best_coloring = tabusearch;
+      return true;
+    }
+    insertPool(tabusearch, pool, poolSimilarity, priority);
+  }
+  return false;
+}
+
+void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
+  // update poolSimilarity
+  poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
+
+  // update priority
+  for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
+
+  // update pool
+  pool.push_back(new_individual);
+
+  // update columns
+  if(new_individual.evaluate() < measure_best_solution){
+    measure_best_solution = new_individual.evaluate();
+    addStableSets(&new_individual);
+  }
+}
+
+void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
+  // update poolSimilarity
+  poolSimilarity.erase(std::make_pair(old_individual->uncolored.size(), old_individual->evaluate()));
+  poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
+
+  // update
+  for (const auto & uncol_v : old_individual->uncolored) priority[uncol_v]--;
+  for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
+
+  // update pool
+  *old_individual = new_individual;
+
+  // update columns
+  if(new_individual.evaluate() < measure_best_solution){
+    measure_best_solution = new_individual.evaluate();
+    addStableSets(&new_individual);
+  }
+}
+
+void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded){
+  assert(pool.size() != 0);
+  std::cout << "pool distances : " << '\t';
+  int sum = 0, size = pool.size();
+  for (int i = 0; i < size; i++) {
+    for (int j = i+1; j < size; j++) {
+      int approx = pool[i].distanceTo(&pool[j], false);
+      int exact = pool[i].distanceTo(&pool[j],true);
+      if (expanded) {
+        std::cout << approx << " | " << exact << '\t';
+      } else {
+        sum += exact;
+      }
+    }
+    if (expanded) std::cout << '\n';
+  }
+  std::cout << "avg = " << sum / ((size*(size+1))/2) << '\n';
+}
+
+void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
+  assert(pool.size() != 0);
+  measure sum = 0;
+  measure best = std::numeric_limits<measure>::max();
+  for (auto& individual : pool) {
+    measure temp = individual.evaluate();
+    sum += temp;
+    best = std::min(best, temp);
+  }
+  std::cout << "best = " << best << "; average = " << sum / pool.size() << '\n';
+}
+
 
 void MMT::PHASE2_ColumnOptimization(){
   // std::cout << "Number of stable sets : " << columns.size() << '\n';
@@ -241,87 +328,6 @@ void MMT::PHASE2_ColumnOptimization(){
     logger.status = COl_OPT;
     // return solution
   }
-}
-
-MMTPartialColoring* MMT::getColoring(){
-  return &cur_best_coloring;
-}
-
-std::stringstream MMT::streamLogs(){
-  std::stringstream logs;
-  logs << logger.status << ',';
-  logs << logger.totTimeInSec << ',' << logger.lastItTimeInSec << ',';
-  logs << logger.totNumOffsprings << ',' << logger.lastItNumOffsprings << ',';
-  logs << logger.UB << ',' << logger.LB << ',';
-  logs << logger.colOpt;
-  return logs;
-}
-
-void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
-  // update poolSimilarity
-  poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
-
-  // update priority
-  for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
-
-  // update pool
-  pool.push_back(new_individual);
-
-  // update columns
-  if(new_individual.evaluate() < measure_best_solution){
-    measure_best_solution = new_individual.evaluate();
-    addStableSets(&new_individual);
-  }
-}
-
-void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
-  // update poolSimilarity
-  poolSimilarity.erase(std::make_pair(old_individual->uncolored.size(), old_individual->evaluate()));
-  poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
-
-  // update
-  for (const auto & uncol_v : old_individual->uncolored) priority[uncol_v]--;
-  for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
-
-  // update pool
-  *old_individual = new_individual;
-
-  // update columns
-  if(new_individual.evaluate() < measure_best_solution){
-    measure_best_solution = new_individual.evaluate();
-    addStableSets(&new_individual);
-  }
-}
-
-void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded){
-  assert(pool.size() != 0);
-  std::cout << "pool distances : " << '\t';
-  int sum = 0, size = pool.size();
-  for (int i = 0; i < size; i++) {
-    for (int j = i+1; j < size; j++) {
-      int approx = pool[i].distanceTo(&pool[j], false);
-      int exact = pool[i].distanceTo(&pool[j],true);
-      if (expanded) {
-        std::cout << approx << " | " << exact << '\t';
-      } else {
-        sum += exact;
-      }
-    }
-    if (expanded) std::cout << '\n';
-  }
-  std::cout << "avg = " << sum / ((size*(size+1))/2) << '\n';
-}
-
-void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
-  assert(pool.size() != 0);
-  measure sum = 0;
-  measure best = std::numeric_limits<measure>::max();
-  for (auto& individual : pool) {
-    measure temp = individual.evaluate();
-    sum += temp;
-    best = std::min(best, temp);
-  }
-  std::cout << "best = " << best << "; average = " << sum / pool.size() << '\n';
 }
 
 // stable sets of each newly best partial coloring is added to columns

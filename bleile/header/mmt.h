@@ -76,6 +76,8 @@ private:
   const int numColOpt = 1000;
   std::queue< std::unordered_set<nodeid> > columns;
 
+  bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, int pool_size);
+
   void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool,
     std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority);
 
