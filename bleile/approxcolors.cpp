@@ -13,11 +13,23 @@ int main(int argc, char **av) {
 
   MMTGraph g(argc, av);
 
-  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 10, /*pool size*/ 20, /*pgreedy*/0.2);
+  MMTPartialColoring D(30, &g, 10000000, 45);
+  D.dsatur();
+  clock_t t = clock();
+  D.tabuSearch();
+  std::cout << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
+  D.toString();
+
+
+  // MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 10, /*pool size*/ 20, /*pgreedy*/0.2);
+
+  /*
 
   mmt.start();
 
   documentation(g.instance, &mmt, 1, 4);
+
+  */
 
   // MMTGraph g(argc, av);
   //
