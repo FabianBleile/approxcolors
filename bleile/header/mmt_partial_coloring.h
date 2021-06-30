@@ -33,7 +33,7 @@ public:
   std::vector<color> colors;
   std::unordered_set<nodeid> uncolored;
 
-  bool greedy();
+  bool greedy(const vector<nodeid>& v = vector<nodeid>());
 
   bool dsatur();
 

@@ -44,13 +44,17 @@ int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
 }
 
 // clear (k+1)-st bucket in a greedy way
-bool PartialColoring::greedy() {
+bool PartialColoring::greedy(const vector<nodeid>& v) {
   // SEQ
-  std::vector<nodeid> v(uncolored.begin(), uncolored.end());
-  // obtain a time-based seed:
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
-  for (const auto &u : v) setColor(u, findMinAvailableColor(u));
+  if (v.empty()) {
+    std::vector<nodeid> temp(uncolored.begin(), uncolored.end());
+    // obtain a time-based seed:
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(temp.begin(), temp.end(), std::default_random_engine(seed));
+    for (const auto &u : temp) setColor(u, findMinAvailableColor(u));
+  } else if (v.size() == graph->n) {
+    for (const auto &u : v) setColor(u, findMinAvailableColor(u));
+  }
 
   return evaluate() == 0;
 }
@@ -371,7 +375,14 @@ bool MMTPartialColoring::tabuSearch(){
     tabuList[u][h] = it + T;
   }
 
-  return greedy();
+  // for (size_t i = 0; i < isChosen.size(); i++) {
+  //   if(isChosen[i] == false) {
+  //     std::cout << i << ' ';
+  //   }
+  // }
+  // std::cout << '\n';
+
+  return evaluate() == 0;
 }
 
 // Mutation MMT
