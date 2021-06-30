@@ -13,7 +13,7 @@ int main(int argc, char **av) {
 
   MMTGraph g(argc, av);
 
-  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 30, /*pool size*/ 10, /*pgreedy*/0.2);
+  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 60, /*pool size*/ 10, /*pgreedy*/0.2);
 
   mmt.start();
 
