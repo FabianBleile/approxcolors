@@ -9,10 +9,6 @@
 
 class PartialColoringCluster {
 public:
-  PartialColoringCluster(){
-    k = -1;
-  }
-
   PartialColoringCluster(const char * filename, MMTGraph * graph) {
 
     // Read from the text file
@@ -70,10 +66,8 @@ public:
   PartialColoringCluster(int num_center, int n, int k, MMTGraph * graph) : num_center(num_center), n(n), k(k) {
     // init centers
     for (size_t i = 0; i < num_center; i++) {
-      MMTPartialColoring col(k, graph, 1000, 25);
+      PartialColoring col(k, graph);
       col.greedy();
-      col.tabuSearch();
-      PartialColoring basecol = col;
       centers.push_back(col);
 
       logger.start_center.push_back(0);
@@ -96,7 +90,24 @@ public:
     }
   }
 
-  void feed(PartialColoring& input){
+  void initFeeding(int timeLimit, int ratioLimit){
+    std::vector<bool> ratio(ratioLimit, 1);
+    int sumRatio = ratioLimit;
+
+    clock_t t = clock();
+    for (size_t it = 0; ((float) clock() - t)/CLOCKS_PER_SEC < timeLimit && sumRatio != 0 ; it++) {
+      it %= ratioLimit;
+      PartialColoring col(k, graph);
+      col.greedy();
+      bool setToNewCenter = feed(col);
+      sumRatio += setToNewCenter - ratio[it];
+      ratio[it] = setToNewCenter;
+    }
+    std::cout << "time " << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
+    std::cout << "# updates in the last " << ratioLimit << "iters : " << sumRatio << '\n';
+  }
+
+  bool feed(PartialColoring& input){
     int nearest_center_dist;
     int next_center_dist;
     int nearest_center = getNearestCenter(input, nearest_center_dist, next_center_dist);
@@ -107,7 +118,9 @@ public:
     // }
     if (next_center_dist > next_center_dists[nearest_center]) {
       replaceNode(input,nearest_center);
+      return true;
     }
+    return false;
   }
 
   void test(PartialColoring& input, bool start) {
@@ -128,10 +141,6 @@ public:
   void writeAnalysisToFile(const char * filename){
     std::ofstream doc;
     doc.open (filename, std::fstream::app);
-    doc << "w ";
-    for (auto& hits : logger.start_center) {
-      doc << hits << ' ';
-    }
     doc << '\n';
     doc << "w ";
     for (auto& hits : logger.end_center) {
