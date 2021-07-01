@@ -133,6 +133,9 @@ testall:
 testsingle:
 	./approxcolors test/dimacs/DSJR500.1c.col
 
+testdummy:
+	./approxcolors test/dimacs/DSJC250.5.col
+
 testcompare:
 	./approxcolors test/dimacs/DSJC250.5.col
 	./color test/dimacs/DSJC250.5.col

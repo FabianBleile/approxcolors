@@ -9,7 +9,10 @@
 
 class PartialColoringCluster {
 public:
-  PartialColoringCluster(const char * filename, MMTGraph * graph) {
+  MMTGraph * graph;
+
+  PartialColoringCluster(const char * filename, MMTGraph * g) {
+    graph = g;
 
     // Read from the text file
     std::ifstream clusterfile(filename);
@@ -63,7 +66,9 @@ public:
     }
   }
 
-  PartialColoringCluster(int num_center, int n, int k, MMTGraph * graph) : num_center(num_center), n(n), k(k) {
+  PartialColoringCluster(int num_center, int n, int k, MMTGraph * g) : num_center(num_center), n(n), k(k) {
+    graph = g;
+
     // init centers
     for (size_t i = 0; i < num_center; i++) {
       PartialColoring col(k, graph);
@@ -102,9 +107,21 @@ public:
       bool setToNewCenter = feed(col);
       sumRatio += setToNewCenter - ratio[it];
       ratio[it] = setToNewCenter;
+      if (it == 0) {
+        std::cout << "# updates in the last " << ratioLimit << " iters : " << sumRatio << " in " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" <<'\n';
+      }
     }
     std::cout << "time " << ((float) clock() - t)/CLOCKS_PER_SEC << '\n';
-    std::cout << "# updates in the last " << ratioLimit << "iters : " << sumRatio << '\n';
+    std::cout << "# updates in the last " << ratioLimit << " iters : " << sumRatio << '\n';
+  }
+
+  void initTesting(int timeLimit){
+    clock_t t = clock();
+    for (size_t it = 0; ((float) clock() - t)/CLOCKS_PER_SEC < timeLimit; it++) {
+      PartialColoring col(k, graph);
+      col.greedy();
+      test(col, true);
+    }
   }
 
   bool feed(PartialColoring& input){
@@ -112,10 +129,6 @@ public:
     int next_center_dist;
     int nearest_center = getNearestCenter(input, nearest_center_dist, next_center_dist);
 
-    // replace old center if new input fits better
-    // if (input.evaluate() < centers[nearest_center].evaluate()){
-    //   replaceNode(input,nearest_center);
-    // }
     if (next_center_dist > next_center_dists[nearest_center]) {
       replaceNode(input,nearest_center);
       return true;

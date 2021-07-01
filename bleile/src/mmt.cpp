@@ -104,6 +104,12 @@ void MMT::EADecision(int k) {
   clock_t t = clock();
   size_t iter = 0;
   while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec) {
+    if (!(iter % 2000)) {
+      std::cout << "Anzahl Iterationen " << iter << '\t';
+      printPoolFitness(pool);
+      //printPoolDistance(pool, true);
+    }
+
     auto parent_1 = std::next(std::begin(pool), (int) rand() % pool.size());
     auto parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
     while (parent_2 == parent_1) {
@@ -154,10 +160,6 @@ void MMT::EADecision(int k) {
       updatePool(offspring, &(*parent_1), pool, poolSimilarity, priority);
     }
     iter++;
-    if (!(iter % 500)) {
-      std::cout << "Anzahl Iterationen " << iter << '\t'; printPoolFitness(pool);
-      printPoolDistance(pool);
-    }
 
     logger.totNumOffsprings++;
     logger.lastItNumOffsprings++;
@@ -302,17 +304,17 @@ void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old
 
 void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded){
   assert(pool.size() != 0);
-  std::cout << "pool distances : " << '\t';
+  std::cout << "pool distances : " << '\n';
   int sum = 0, size = pool.size();
   for (int i = 0; i < size; i++) {
-    for (int j = i+1; j < size; j++) {
+    for (int j = i; j < size; j++) {
       int approx = pool[i].distanceTo(&pool[j], false);
       int exact = pool[i].distanceTo(&pool[j],true);
       if (expanded) {
-        std::cout << approx << " | " << exact << '\t';
-      } else {
-        sum += exact;
+        //std::cout << approx << " | " << exact << '\t';
+        std::cout << exact << "|\t";
       }
+      sum += exact;
     }
     if (expanded) std::cout << '\n';
   }
@@ -324,10 +326,21 @@ void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
   measure best = std::numeric_limits<measure>::max();
   for (auto& individual : pool) {
     measure temp = individual.evaluate();
+    std::cout << temp << " ; " << individual.uncolored.size() << "\t";
     sum += temp;
-    best = std::min(best, temp);
+    best = temp < best ? temp : best;
   }
-  std::cout << "best = " << best << "; average = " << sum / pool.size() << '\n';
+  std::cout << "|\tbest = " << best << "; average = " << sum / pool.size() << '\n';
+
+  for (auto& individual : pool) {
+    auto indv_colors = individual.colors;
+    for (size_t i = 0; i < graph.n; i++) {
+      if (indv_colors[i] == 0) {
+        std::cout << i << ' ';
+      }
+    }
+    std::cout << '\n';
+  }
 }
 
 // stable sets of each newly best partial coloring is added to columns
