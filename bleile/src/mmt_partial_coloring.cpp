@@ -134,12 +134,13 @@ int PartialColoring::findMinAvailableColor(nodeid u) {
   return k;
 }
 
-measure PartialColoring::evaluate() const {
+measure PartialColoring::evaluate() {
   measure cost = 0;
   for (const auto & u : uncolored) {
     int deg = graph->getDegree(u);
     cost += deg < k ? 0 : deg;
   }
+  fitness = cost;
   return cost;
   // return uncolored.size();
 }
@@ -223,6 +224,11 @@ int PartialColoring::exactDistance(std::vector<std::vector<double> >& matInterse
   // std::cout << '\n';
 
 	return graph->n - num_uncolored - (k*graph->n - r);
+}
+
+bool PartialColoring::operator<(const PartialColoring& S) const
+{
+  return (this->fitness < S.fitness);
 }
 
 
@@ -464,16 +470,18 @@ void MMTPartialColoring::lockColoring(){
   }
 }
 
-void MMTPartialColoring::checkColoring(){
+bool MMTPartialColoring::checkColoring(){
   lockColoring();
   for (auto cclass : color_classes) {
     for (auto u : cclass) {
       for (auto w : cclass) {
         if (u != w && graph->isAdj(u, w)) {
           std::cout << "ERROR - THIS COLORING IS NOT LEGAL!!!" << '\n';
+          return false;
         }
       }
     }
   }
   std::cout << "CALCULATED COLORING IS LEGAL" << '\n';
+  return true;
 }

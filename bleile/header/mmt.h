@@ -28,22 +28,6 @@ public:
 
   MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5);
 
-  void start();
-
-  void PHASE0_EAInit();
-
-  void PHASE1_EAOptimizer();
-
-  void EADecision(int k);
-
-  void PHASE2_ColumnOptimization();
-
-  MMTPartialColoring* getColoring();
-
-  std::stringstream streamLogs();
-
-private:
-
   enum status {
     UNSOLVED = 1,
     INIT_GREEDY = 2,
@@ -53,6 +37,22 @@ private:
     COl_OPT = 32,
     EA_TIME_OUT = 64
   };
+
+  void start();
+
+  void PHASE0_EAInit();
+
+  void PHASE1_EAOptimizer();
+
+  status EADecision(int k);
+
+  void PHASE2_ColumnOptimization();
+
+  MMTPartialColoring* getColoring();
+
+  std::stringstream streamLogs();
+
+private:
 
   struct LogData {
     status status = UNSOLVED;
@@ -70,6 +70,7 @@ private:
   MMTPartialColoring cur_best_coloring;
   double pGreedy;
   const double priority_noise = 0.5;
+  int R; // pool spacing
 
   LogData logger;
 
@@ -78,11 +79,12 @@ private:
 
   bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, int pool_size);
 
-  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool,
-    std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority);
+  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
   void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual,
-    std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority);
+    std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+
+  void updateDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool, int elimIndv);
 
   void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false);
 
