@@ -370,9 +370,15 @@ bool MMTPartialColoring::tabuSearch(){
 
   color_found:
     // perform move (u,h)
-    moveToColor(u, h);
+    const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
+    for (const auto &v : *u_neighbors) {
+      if (colors[v] == h) {
+        setColor(v, k);
+        tabuList[v][h] = it + T;
+      }
+    }
+    setColor(u,h);
     // add move to TabuList
-    tabuList[u][h] = it + T;
   }
 
   // for (size_t i = 0; i < isChosen.size(); i++) {

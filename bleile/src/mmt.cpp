@@ -106,8 +106,8 @@ void MMT::EADecision(int k) {
   while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec) {
     if (!(iter % 2000)) {
       std::cout << "Anzahl Iterationen " << iter << '\t';
-      printPoolFitness(pool);
-      //printPoolDistance(pool, true);
+      //printPoolFitness(pool);
+      printPoolDistance(pool, false);
     }
 
     auto parent_1 = std::next(std::begin(pool), (int) rand() % pool.size());
