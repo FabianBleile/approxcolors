@@ -326,12 +326,13 @@ void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
   measure best = std::numeric_limits<measure>::max();
   for (auto& individual : pool) {
     measure temp = individual.evaluate();
-    std::cout << temp << " ; " << individual.uncolored.size() << "\t";
+    //std::cout << temp << " ; " << individual.uncolored.size() << "\t";
     sum += temp;
     best = temp < best ? temp : best;
   }
   std::cout << "|\tbest = " << best << "; average = " << sum / pool.size() << '\n';
 
+  /*
   for (auto& individual : pool) {
     auto indv_colors = individual.colors;
     for (size_t i = 0; i < graph.n; i++) {
@@ -341,6 +342,7 @@ void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
     }
     std::cout << '\n';
   }
+  */
 }
 
 // stable sets of each newly best partial coloring is added to columns
