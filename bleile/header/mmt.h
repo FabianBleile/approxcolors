@@ -81,8 +81,10 @@ private:
 
   void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual,
+  void updatePool(MMTPartialColoring& new_individual, int old_individual,
     std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+
+  void insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool);
 
   void updateDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool, int elimIndv);
 

@@ -120,127 +120,88 @@ MMT::status MMT::EADecision(int k) {
 
   while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec) {
     /*  CROSSOVER  */
-    size_t maxRejects = 20;
+    pool_size = pool.size();
+
     MMTPartialColoring offspring(k, &graph, L, T);
     std::vector<int> distOffspringToPool(pool_size, 0);
-    bool accept = true;
-    bool acceptOffspring = false;
-    for (size_t i = 0; true; i++) {
-      auto parent_1 = std::next(std::begin(pool), (int) rand() % pool.size());
-      auto parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
-      while (parent_2 == parent_1) {
-        parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
-      }
 
-      // generate offspring and if it is not already a solution improve by calling tabuSearch on it
-      offspring = MMTPartialColoring(k, &graph, L, T);
-      if(offspring.crossover(&(*parent_1), &(*parent_2)) || offspring.tabuSearch()) {
-        cur_best_coloring = offspring;
-        return EA;
-      }
+    int parent_1 = (int) rand() % pool_size;
+    int parent_2 = (int) rand() % pool_size;
+    while (parent_2 == parent_1) {
+      parent_2 = (int) rand() % pool_size;
+    }
 
-      /*
-      if (!(iter % 5)) {
-        std::cout << offspring.distanceTo(&(*parent_1), true) << ',' << offspring.distanceTo(&(*parent_2), true) << '\n';
-      }
-      */
+    // generate offspring and if it is not already a solution improve by calling tabuSearch on it
+    offspring = MMTPartialColoring(k, &graph, L, T);
+    if(offspring.crossover(&pool[parent_1], &pool[parent_2]) || offspring.tabuSearch()) {
+      cur_best_coloring = offspring;
+      return EA;
+    }
 
-      int maxFitness = 0;
-      int elimIndv = -1;
-      int neighborhoodSize = 0;
-      for (size_t i = 0; i < pool_size; i++) {
-        int temp = offspring.distanceTo(&pool[i], true);
-        distOffspringToPool[i] = temp;
-        if (temp < R) {
-          neighborhoodSize++;
-          if (neighborhoodSize > pool_size/2) {
-            goto retry;
-          }
+    int elimIndv;
+    std::vector<int> nearIndvs;
+    for (size_t j = 0; j < pool_size; j++) {
+      int temp = offspring.distanceTo(&pool[j], false);
+      distOffspringToPool[j] = temp;
+      // std::cout << temp << ',' <<  R << ' ';
+      if (temp < R) {
+        nearIndvs.push_back(j);
+      }
+    }
+    if (nearIndvs.size() > 1) {
+      std::cout << "1" << ' ';
+      int worstFitness = 0;
+      for (auto nearIndv : nearIndvs) {
+        if (pool[nearIndv].fitness > worstFitness) {
+          elimIndv = nearIndv;
         }
       }
-      for (size_t i = 0; i < pool_size; i++) {
-        if (pool[i].fitness > maxFitness) {
-          maxFitness = pool[i].fitness;
-          elimIndv = i;
-        }
-      }
-      updatePool(offspring, &pool[elimIndv], pool, priority);
+      updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
-      break;
-
-      retry:
-      std::cout << ' ';
-        // printPoolDistance(pool, false);
-
-      // reject offspring if it is < R away from another indv in pool and fitness is worse
-      /*
-      accept = true;
-      nodeid elimIndv = -1;
-      for (size_t i = 0; i < pool_size; i++) {
-        distOffspringToPool[i] = offspring.distanceTo(&pool[i], true);
-        if (!acceptOffspring && distOffspringToPool[i] < R) {
-          accept = false;
-          if (offspring.fitness < pool[i].fitness) {
-            acceptOffspring = true;
-            elimIndv = i;
-          }
-        }
-      }
-      if (acceptOffspring) {
-        //  DIRECT REPLACEMENT
-        // std::cout << "DIRECT REPLACEMENT " << offspring.fitness << ',' << pool[elimIndv].fitness << '\n';
-
-        updatePool(offspring, &pool[elimIndv], pool, priority);
+    } else if (nearIndvs.size() == 1) {
+      std::cout << "2" << ' ';
+      elimIndv = nearIndvs[0];
+      if (offspring.fitness < pool[elimIndv].fitness) {
+        updatePool(offspring, elimIndv, pool, priority);
         updateDistance(dist, distOffspringToPool, elimIndv);
-        break;
-      } else if (accept) {
-        break;
-      }*/
-    }
-
-    /*if (!accept && !acceptOffspring) {
-
-      //  DIFFERENT MUTATION DUE TO TOO MANY REJECTIONS
-
-      // there is a similar individual in the pool
-      if ((float) rand()/RAND_MAX < pGreedy) {
-        // drop offspring and generate new partial coloring with priorityGreedy()
-        offspring = MMTPartialColoring(k, &graph, L, T);
-
-        if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
-          cur_best_coloring = offspring;
-          return EA;
-        }
       }
-    }
-
-    if (!acceptOffspring) {
-
-      //  STANDARD REPLACEMENT
-      // std::cout << "STANDARD REPLACEMENT" << '\n';
-
-      auto temp_pool = pool;
-      std::sort(temp_pool.begin(), temp_pool.end());
-      measure medianFitness = temp_pool[ (pool_size-1) / 2].fitness;
-      int candidate_1 = (int) rand() % pool_size; // protect fittest
-      int candidate_2 = -1;
-      int minDist = std::numeric_limits<int>::max();
-      for (size_t i = 0; i < pool_size; i++) {
-        if (i != candidate_1 && dist[candidate_1][i] < minDist && pool[i].fitness <= medianFitness) {
-          candidate_2 = i;
-          minDist = dist[candidate_1][i];
-        }
-      }
-      if (pool[candidate_1].fitness < pool[candidate_2].fitness) {
-        updatePool(offspring, &pool[candidate_2], pool, priority);
-        updateDistance(dist, distOffspringToPool, candidate_2);
+    } else {
+      if (pool[parent_1].fitness < pool[parent_2].fitness) {
+        elimIndv = parent_2;
       } else {
-        updatePool(offspring, &pool[candidate_1], pool, priority);
-        updateDistance(dist, distOffspringToPool, candidate_1);
+        elimIndv = parent_1;
       }
-    }*/
+      updatePool(offspring, elimIndv, pool, priority);
+      updateDistance(dist, distOffspringToPool, elimIndv);
+      std::cout << "3" << ' ';
+      /*
+      std::vector<int> avgDist(pool_size);
+      auto it = dist.begin();
+      std::generate(avgDist.begin(), avgDist.end(), [&] () mutable {
+        return it != dist.end() ? std::accumulate((*it).begin(), (*it++).end(), 0) : 0;
+      });
 
-    if (iter % 100 == 0) {
+      std::vector<int> indvs(pool_size);
+      std::iota(indvs.begin(), indvs.end(), 0);
+      std::sort(indvs.begin(), indvs.end(), [&](const int & left, const int & right) -> bool {
+        return avgDist[left] < avgDist[right];
+      });
+      int worstFitness = 0;
+      for (size_t j = 0; j < pool_size / 2; j++) {
+        if (pool[j].fitness > worstFitness) {
+          elimIndv = j;
+        }
+      }
+      updatePool(offspring, elimIndv, pool, priority);
+      updateDistance(dist, distOffspringToPool, elimIndv);
+      */
+      /*
+      insertPool(offspring, pool, priority);
+      insertDistance(dist, distOffspringToPool);
+      */
+    }
+
+    if (iter % 500 == 0) {
       printPoolDistance(pool, false);
       printPoolFitness(pool);
     }
@@ -283,18 +244,26 @@ void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialC
   }
 }
 
-void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+void MMT::updatePool(MMTPartialColoring& new_individual, int old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
   // update
-  for (const auto & uncol_v : old_individual->uncolored) priority[uncol_v]++;
+  for (const auto & uncol_v : pool[old_individual].uncolored) priority[uncol_v]++;
   for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
 
   // update pool
-  *old_individual = new_individual;
+  pool[old_individual] = new_individual;
 
   // update columns
   if(new_individual.evaluate() < measure_best_solution){
     measure_best_solution = new_individual.evaluate();
     //addStableSets(&new_individual);
+  }
+}
+
+void MMT::insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool){
+  distOffspringToPool.push_back(0);
+  dist.push_back(distOffspringToPool);
+  for (size_t i = 0; i < dist.size()-1; i++) {
+    dist[i].push_back(distOffspringToPool[i]);
   }
 }
 
@@ -453,3 +422,78 @@ void MMT::addStableSets(MMTPartialColoring* new_best){
     if (columns.size() > numColOpt) columns.pop();
   }
 }
+
+
+/* CODE FRIEDHOF */
+
+// printPoolDistance(pool, false);
+
+// reject offspring if it is < R away from another indv in pool and fitness is worse
+/*
+bool accept = true;
+bool acceptOffspring = false;
+accept = true;
+nodeid elimIndv = -1;
+for (size_t i = 0; i < pool_size; i++) {
+distOffspringToPool[i] = offspring.distanceTo(&pool[i], true);
+if (!acceptOffspring && distOffspringToPool[i] < R) {
+  accept = false;
+  if (offspring.fitness < pool[i].fitness) {
+    acceptOffspring = true;
+    elimIndv = i;
+  }
+}
+}
+if (acceptOffspring) {
+//  DIRECT REPLACEMENT
+// std::cout << "DIRECT REPLACEMENT " << offspring.fitness << ',' << pool[elimIndv].fitness << '\n';
+
+updatePool(offspring, &pool[elimIndv], pool, priority);
+updateDistance(dist, distOffspringToPool, elimIndv);
+break;
+} else if (accept) {
+break;
+}*/
+//}
+
+/*if (!accept && !acceptOffspring) {
+
+//  DIFFERENT MUTATION DUE TO TOO MANY REJECTIONS
+
+// there is a similar individual in the pool
+if ((float) rand()/RAND_MAX < pGreedy) {
+// drop offspring and generate new partial coloring with priorityGreedy()
+offspring = MMTPartialColoring(k, &graph, L, T);
+
+if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
+  cur_best_coloring = offspring;
+  return EA;
+}
+}
+}
+
+if (!acceptOffspring) {
+
+//  STANDARD REPLACEMENT
+// std::cout << "STANDARD REPLACEMENT" << '\n';
+
+auto temp_pool = pool;
+std::sort(temp_pool.begin(), temp_pool.end());
+measure medianFitness = temp_pool[ (pool_size-1) / 2].fitness;
+int candidate_1 = (int) rand() % pool_size; // protect fittest
+int candidate_2 = -1;
+int minDist = std::numeric_limits<int>::max();
+for (size_t i = 0; i < pool_size; i++) {
+if (i != candidate_1 && dist[candidate_1][i] < minDist && pool[i].fitness <= medianFitness) {
+  candidate_2 = i;
+  minDist = dist[candidate_1][i];
+}
+}
+if (pool[candidate_1].fitness < pool[candidate_2].fitness) {
+updatePool(offspring, &pool[candidate_2], pool, priority);
+updateDistance(dist, distOffspringToPool, candidate_2);
+} else {
+updatePool(offspring, &pool[candidate_1], pool, priority);
+updateDistance(dist, distOffspringToPool, candidate_1);
+}
+}*/

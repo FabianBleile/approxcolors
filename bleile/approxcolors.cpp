@@ -13,7 +13,18 @@ int main(int argc, char **av) {
 
   MMTGraph g(argc, av);
 
-  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 150, /*pool size*/ 10, /*pgreedy*/0.05); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  /*
+  MMTPartialColoring A(5, &g, 50, 5);
+  A.greedy();
+  A.toString(6);
+  MMTPartialColoring B(5, &g, 50, 5);
+  B.greedy();
+  B.toString(6);
+
+  std::cout << A.distanceTo(&B, true) << '\n';
+  */
+
+  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 600, /*pool size*/ 20, /*pgreedy*/0.05); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
 
   mmt.start();
 
