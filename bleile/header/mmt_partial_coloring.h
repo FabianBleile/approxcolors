@@ -74,6 +74,8 @@ public:
 
   bool crossover(MMTPartialColoring* S1, MMTPartialColoring* S2);
 
+  bool spaceAnalysis(measure fitnessBoundary, int numGoodColorings);
+
   bool tabuSearch();
 
   bool tabuSearchSimplified();

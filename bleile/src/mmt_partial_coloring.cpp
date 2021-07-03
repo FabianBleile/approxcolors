@@ -323,6 +323,56 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
   }
 }
 
+// discover the space with a long tabuSearch.
+// safe good colorings and create a distance matrice
+bool MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int numGoodColorings = 10000){
+  std::vector<PartialColoring> goodColorings;
+
+  // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
+  std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
+
+  for (size_t it = 0; goodColorings.size() < numGoodColorings; it++) {
+    // choose u from random vect
+    auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
+    nodeid u = *random_it;
+
+    // init and populate cost vect, explore neighborhood for every color 0 to k-1
+    // high enough constant to not use tabued moves
+    color h = -1;
+    int K = graph->n * graph->n;
+    std::vector<int> costs(k, 0);
+    for (const auto &v : *graph->getNeighbors(u)) {
+      if(colors[v] != k) {
+        costs[colors[v]] += graph->getDegree(v);
+      }
+    }
+    for (color c = 0; c < k; c++) {
+      if (costs[c] == 0) {
+        h = c;
+        goto color_found;
+      } else if (tabuList[u][c] >= it) {
+        costs[c] += K;
+      }
+    }
+    h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+
+  color_found:
+    // perform move (u,h)
+    moveToColor(u, h);
+    // add move to TabuList
+    tabuList[u][h] = it + T;
+  }
+
+  // for (size_t i = 0; i < isChosen.size(); i++) {
+  //   if(isChosen[i] == false) {
+  //     std::cout << i << ' ';
+  //   }
+  // }
+  // std::cout << '\n';
+
+  return evaluate() == 0;
+}
+
 // Mutation
 // set a pair (node, color) tabu for T steps
 bool MMTPartialColoring::tabuSearch(){
