@@ -149,7 +149,7 @@ MMT::status MMT::EADecision(int k) {
       }
     }
     if (nearIndvs.size() > 1) {
-      std::cout << "1" << ' ';
+      std::cout << nearIndvs.size() << ' ';
       int worstFitness = 0;
       for (auto nearIndv : nearIndvs) {
         if (pool[nearIndv].fitness > worstFitness) {
@@ -159,7 +159,7 @@ MMT::status MMT::EADecision(int k) {
       updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
     } else if (nearIndvs.size() == 1) {
-      std::cout << "2" << ' ';
+      std::cout << "1" << ' ';
       elimIndv = nearIndvs[0];
       if (offspring.fitness < pool[elimIndv].fitness) {
         updatePool(offspring, elimIndv, pool, priority);
@@ -173,7 +173,7 @@ MMT::status MMT::EADecision(int k) {
       }
       updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
-      std::cout << "3" << ' ';
+      std::cout << "0" << ' ';
       /*
       std::vector<int> avgDist(pool_size);
       auto it = dist.begin();
