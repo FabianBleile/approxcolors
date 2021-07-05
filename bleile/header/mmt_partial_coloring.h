@@ -20,6 +20,8 @@ extern "C" {
 #include <queue>
 #include <tuple>
 #include <stdexcept>
+#include <fstream>
+#include <sstream>
 
 using color = uint32_t;
 using measure = int;
@@ -74,7 +76,7 @@ public:
 
   bool crossover(MMTPartialColoring* S1, MMTPartialColoring* S2);
 
-  bool spaceAnalysis(measure fitnessBoundary, int numGoodColorings);
+  std::vector<int> spaceAnalysis(measure fitnessBoundary, int maxNumGoodColorings, int maxTime);
 
   bool tabuSearch();
 

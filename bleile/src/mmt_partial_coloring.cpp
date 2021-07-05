@@ -325,52 +325,112 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
 
 // discover the space with a long tabuSearch.
 // safe good colorings and create a distance matrice
-bool MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int numGoodColorings = 10000){
+std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int maxNumGoodColorings = 10000, int maxTime = 60){
+  // collect high quality colorings with fitness equal or better than fitnessBoundary
   std::vector<PartialColoring> goodColorings;
-
   // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
-  std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
+  std::vector<std::vector<size_t>> tabuList(graph->n, std::vector<size_t>(k, 0));
+  // dynamically update fitness
+  measure fitness = evaluate(); //uncolored.size();
+  // current time
+  clock_t t = clock();
 
-  for (size_t it = 0; goodColorings.size() < numGoodColorings; it++) {
-    // choose u from random vect
-    auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
-    nodeid u = *random_it;
+  for (size_t j = 0; j < 1; j++) {
+    t = clock();
+    for (size_t it = 0; goodColorings.size() < maxNumGoodColorings /*/5 * (j + 1)*/ && ((float) clock() - t)/CLOCKS_PER_SEC < maxTime/*/5*/; it++) {
+      // choose u from random vect
+      auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
+      nodeid u = *random_it;
 
-    // init and populate cost vect, explore neighborhood for every color 0 to k-1
-    // high enough constant to not use tabued moves
-    color h = -1;
-    int K = graph->n * graph->n;
-    std::vector<int> costs(k, 0);
-    for (const auto &v : *graph->getNeighbors(u)) {
-      if(colors[v] != k) {
-        costs[colors[v]] += graph->getDegree(v);
+      // init and populate cost vect, explore neighborhood for every color 0 to k-1
+      // high enough constant to not use tabued moves
+      color h = -1;
+      int K = graph->n * graph->n;
+      std::vector<int> costs(k, 0);
+      for (const auto &v : *graph->getNeighbors(u)) {
+        if(colors[v] != k) {
+          costs[colors[v]] += graph->getDegree(v);
+        }
+      }
+      for (color c = 0; c < k; c++) {
+        if (costs[c] == 0) {
+          h = c;
+          goto color_found;
+        } else if (tabuList[u][c] >= it) {
+          costs[c] += K;
+        }
+      }
+      h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
+
+    color_found:
+      fitness -= graph->getDegree(u);
+      fitness += costs[h];
+      if (costs[h] >= K) fitness -= K;
+      // perform move (u,h)
+      moveToColor(u, h);
+      // add move to TabuList
+      tabuList[u][h] = it + T;
+      if (fitness < fitnessBoundary) {
+        //checkColoring();
+        PartialColoring newGoodColoring = *this;
+        goodColorings.push_back(newGoodColoring);
+      }
+
+      if (uncolored.size() == 0) {
+        std::cout << "optimal coloring found - resetted" << '\n';
+        for (size_t i = 0; i < graph->n; i++) {
+          setColor(i, k);
+        }
+        dsatur();
+        fitness = evaluate();
       }
     }
-    for (color c = 0; c < k; c++) {
-      if (costs[c] == 0) {
-        h = c;
-        goto color_found;
-      } else if (tabuList[u][c] >= it) {
-        costs[c] += K;
-      }
+    std::cout << "force - resetted : " << goodColorings.size() << '\n';
+    for (size_t i = 0; i < graph->n; i++) {
+      setColor(i, k);
     }
-    h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-
-  color_found:
-    // perform move (u,h)
-    moveToColor(u, h);
-    // add move to TabuList
-    tabuList[u][h] = it + T;
+    dsatur();
+    fitness = evaluate();
   }
 
-  // for (size_t i = 0; i < isChosen.size(); i++) {
-  //   if(isChosen[i] == false) {
-  //     std::cout << i << ' ';
-  //   }
-  // }
-  // std::cout << '\n';
+  int numGoodColorings = goodColorings.size();
+  if (numGoodColorings < maxNumGoodColorings) {
+    std::cout << "timed out : proceeding with " << numGoodColorings << " of " << maxNumGoodColorings << " colorings" << '\n';
+  }
 
-  return evaluate() == 0;
+  t = clock();
+  std::cout << "start building distance matrix" << '\n';
+  std::vector<std::vector<int> > distMat(numGoodColorings, std::vector<int>(numGoodColorings, 0));
+  std::vector<int> distDistrib(graph->n, 0);
+  for (size_t i = 0; i < numGoodColorings; i++) {
+    for (size_t j = i + 1; j < numGoodColorings; j++) {
+      int dist_ij = goodColorings[i].distanceTo(&goodColorings[j],true);
+      distMat[i][j] = dist_ij;
+      distMat[j][i] = dist_ij;
+      distDistrib[dist_ij]++;
+    }
+  }
+  std::cout << "done : building distance matrix took " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
+  char filename[ ] = "DSJC250.5.spaceAnalysis.csv";
+  std::ofstream doc;
+  doc.open(filename, std::ios::out | std::ios::trunc);
+  for (size_t i = 0; i < numGoodColorings; i++) {
+    for (size_t j = 0; j < numGoodColorings - 1; j++) {
+      //std::cout << distMat[i][j] << '\n';
+      doc << distMat[i][j] << ',';
+    }
+    doc << distMat[i][numGoodColorings - 1] << '\n';
+  }
+  doc.close();
+  char filenameFitness[ ] = "DSJC250.5.spaceAnalysisFitness.csv";
+  std::ofstream docFitness;
+  docFitness.open(filenameFitness, std::ios::out | std::ios::trunc);
+  for (size_t i = 0; i < numGoodColorings-1; i++) {
+    docFitness << goodColorings[i].evaluate() << ',';
+  }
+  docFitness << goodColorings[numGoodColorings-1].uncolored.size();
+  docFitness.close();
+  return distDistrib;
 }
 
 // Mutation
@@ -525,5 +585,9 @@ void MMTPartialColoring::checkColoring(){
       }
     }
   }
-  std::cout << "CALCULATED COLORING IS LEGAL" << '\n';
+  std::cout << "coloring is legal" << '\n';
+  if (uncolored.size() == 0) {
+    std::cout << "and complete";
+  }
+  std::cout << '\n';
 }

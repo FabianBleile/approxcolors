@@ -9,15 +9,22 @@ void documentation(std::string instance, MMT* mmt, int i, int imax){
   doc.close();
 }
 
+void spaceAnalysis(){
+
+}
+
 int main(int argc, char **av) {
 
   MMTGraph g(argc, av);
 
-  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 150, /*pool size*/ 10, /*pgreedy*/0.05); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  MMTPartialColoring explorer(28, &g, 1, 45);
+  explorer.dsatur();
+  std::vector<int> distDistrib = explorer.spaceAnalysis(200, 240, 600);
+  for (size_t i = 0; i < distDistrib.size(); i++) {
+    std::cout << distDistrib[i] << ',';
+  }
+  std::cout << '\n';
 
-  mmt.start();
-
-  documentation(g.instance, &mmt, 1, 4);
 
   return 0;
 };
