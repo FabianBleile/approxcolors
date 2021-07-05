@@ -51,20 +51,6 @@ int read_graph(int ac, char **av, int *pncount, int *pecount, int **pelist)
       cd->upper_bound = parms->initial_upper_bound;
       get_problem_name(cd->pname, parms->edgefile);
 
-      printf("Rounding strategy: ");
-      switch (parms->rounding_strategy)
-      {
-      case COLOR_neighbor_rounding:
-          printf("neighbor\n");
-          break;
-      case COLOR_uniform_rounding:
-          printf("uniform\n");
-          break;
-      case COLOR_no_rounding:
-          printf("none\n");
-          break;
-      }
-
       if (COLORdbg_lvl() > 1)
           printf("Debugging turned on\n");
       fflush(stdout);
@@ -72,36 +58,8 @@ int read_graph(int ac, char **av, int *pncount, int *pecount, int **pelist)
 
       rval = COLORread_dimacs(parms->edgefile, pncount, pecount,
                               pelist, (int **)NULL);
-      // rval = COLORread_dimacs(parms->edgefile, pncount, pecount,
-      //                         pelist, (int **)NULL);
+
       COLORcheck_rval(rval, "COLORread_dimacs failed");
-
-      // for (int i = 0; i < 2*(cd->ecount); i++) {
-      //   printf("%i\n", (cd->elist)[i]);
-      // }
-
-      // pelist = &(cd->elist);
-      // pncount = &(cd->ncount);
-      // pecount = &(cd->ecount);
-
-      // if (cd->upper_bound > cd->ncount)
-      // {
-      //     cd->upper_bound = cd->ncount;
-      // }
-      //
-      // if (colorproblem.parms.backupdir)
-      // {
-      //     recover_colordata(cd, &colorproblem);
-      // }
-
-      /*
-
-        Added snippet to make use of already coded functionalities
-
-      */
-      // *pncount = cd->ncount;
-      // *pecount = cd->ecount;
-      // *pelist = cd->elist;
 
 
   CLEANUP:

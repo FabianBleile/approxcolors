@@ -33,6 +33,7 @@ void MMT::PHASE0_EAInit(){
   init.tabuSearch();
   cur_best_coloring = init;
   logger.UB = init.getNumColors();
+  std::cout << "Init UB to " << logger.UB << "\n";
 }
 
 void MMT::PHASE1_EAOptimizer() {
