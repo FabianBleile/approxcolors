@@ -59,6 +59,7 @@ MMT::status MMT::EADecision(int k) {
 
   // priority vector : for every vertex keeps track of the total number this
   //                   vertex is left uncolored in the current pool
+  int numUncoloredNodes = graph.n;
   std::vector<int> priority(graph.n, pool_size);
 
   // pool : stores the current partial colorings
@@ -79,7 +80,7 @@ MMT::status MMT::EADecision(int k) {
       cur_best_coloring = dsatur;
       return INIT_DSATUR;
     }
-    insertPool(dsatur, pool, priority);
+    numUncoloredNodes = insertPool(dsatur, pool, priority);
   }
 
   // SEQ Block
@@ -90,7 +91,7 @@ MMT::status MMT::EADecision(int k) {
       cur_best_coloring = dsatur;
       return INIT_GREEDY;
     }
-    insertPool(dsatur, pool, priority);
+    numUncoloredNodes = insertPool(dsatur, pool, priority);
   }
 
   // TABU SEARCH Block
@@ -101,7 +102,7 @@ MMT::status MMT::EADecision(int k) {
       cur_best_coloring = tabusearch;
       return INIT_TABU;
     }
-    insertPool(tabusearch, pool, priority);
+    numUncoloredNodes = insertPool(tabusearch, pool, priority);
   }
 
   // calculate set partition distances
@@ -156,13 +157,13 @@ MMT::status MMT::EADecision(int k) {
           elimIndv = nearIndv;
         }
       }
-      updatePool(offspring, elimIndv, pool, priority);
+      numUncoloredNodes = updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
     } else if (nearIndvs.size() == 1) {
       std::cout << "1" << ' ';
       elimIndv = nearIndvs[0];
       if (offspring.fitness < pool[elimIndv].fitness) {
-        updatePool(offspring, elimIndv, pool, priority);
+        numUncoloredNodes = updatePool(offspring, elimIndv, pool, priority);
         updateDistance(dist, distOffspringToPool, elimIndv);
       }
     } else {
@@ -171,7 +172,7 @@ MMT::status MMT::EADecision(int k) {
       } else {
         elimIndv = parent_1;
       }
-      updatePool(offspring, elimIndv, pool, priority);
+      numUncoloredNodes = updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
       std::cout << "0" << ' ';
       /*
@@ -228,7 +229,7 @@ std::stringstream MMT::streamLogs(){
   return logs;
 }
 
-void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+int MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
   // update priority
   for (const auto & uncol_v : new_individual.uncolored) {
     priority[uncol_v]--;
@@ -242,9 +243,13 @@ void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialC
     measure_best_solution = new_individual.evaluate();
     //addStableSets(&new_individual);
   }
+
+  int numUncoloredNodes = 0;
+  for (auto i : priority) if (i == pool_size) numUncoloredNodes++;
+  return numUncoloredNodes;
 }
 
-void MMT::updatePool(MMTPartialColoring& new_individual, int old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+int MMT::updatePool(MMTPartialColoring& new_individual, int old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
   // update
   for (const auto & uncol_v : pool[old_individual].uncolored) priority[uncol_v]++;
   for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
@@ -257,6 +262,10 @@ void MMT::updatePool(MMTPartialColoring& new_individual, int old_individual, std
     measure_best_solution = new_individual.evaluate();
     //addStableSets(&new_individual);
   }
+
+  int numUncoloredNodes = 0;
+  for (auto i : priority) if (i == pool_size) numUncoloredNodes++;
+  return numUncoloredNodes;
 }
 
 void MMT::insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool){

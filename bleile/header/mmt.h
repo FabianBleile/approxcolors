@@ -79,9 +79,9 @@ private:
 
   bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, int pool_size);
 
-  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  int insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  void updatePool(MMTPartialColoring& new_individual, int old_individual,
+  int updatePool(MMTPartialColoring& new_individual, int old_individual,
     std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
   void insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool);
