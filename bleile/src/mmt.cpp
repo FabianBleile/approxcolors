@@ -163,7 +163,7 @@ MMT::status MMT::EADecision(int k) {
     int elimIndv;
     std::vector<int> nearIndvs;
     for (size_t j = 0; j < pool_size; j++) {
-      int temp = offspring.distanceTo(&pool[j], false);
+      int temp = offspring.distanceTo(&pool[j], true);
       distOffspringToPool[j] = temp;
       // std::cout << temp << ',' <<  R << ' ';
       if (temp < R) {
@@ -171,7 +171,7 @@ MMT::status MMT::EADecision(int k) {
       }
     }
     if (nearIndvs.size() > 1) {
-      std::cout << nearIndvs.size() << ' ';
+      //std::cout << nearIndvs.size() << ' ';
       int worstFitness = 0;
       for (auto nearIndv : nearIndvs) {
         if (pool[nearIndv].fitness > worstFitness) {
@@ -181,7 +181,7 @@ MMT::status MMT::EADecision(int k) {
       updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
     } else if (nearIndvs.size() == 1) {
-      std::cout << "1" << ' ';
+      //std::cout << "1" << ' ';
       elimIndv = nearIndvs[0];
       if (offspring.fitness < pool[elimIndv].fitness) {
         updatePool(offspring, elimIndv, pool, priority);
@@ -195,7 +195,7 @@ MMT::status MMT::EADecision(int k) {
       }
       updatePool(offspring, elimIndv, pool, priority);
       updateDistance(dist, distOffspringToPool, elimIndv);
-      std::cout << "0" << ' ';
+      //std::cout << "0" << ' ';
     }
 
     if (iter % 500 == 0) {
@@ -281,7 +281,7 @@ void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded
   std::cout << "\n pool distances | ";
   int sum = 0, size = pool.size(), closest = std::numeric_limits<int>::max();
   for (int i = 0; i < size; i++) {
-    for (int j = i; j < size; j++) {
+    for (int j = i+1; j < size; j++) {
       int approx = pool[i].distanceTo(&pool[j], false);
       int exact = pool[i].distanceTo(&pool[j],true);
       closest = std::min(closest, exact);
@@ -293,7 +293,7 @@ void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded
     }
     if (expanded) std::cout << '\n';
   }
-  std::cout << "closest = " << closest <<"; average = " << sum / ((size*(size+1))/2) << '\n';
+  std::cout << "closest = " << closest <<"; average = " << sum / ((size*(size+1)/2)-size) << '\n';
 }
 
 void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){

@@ -131,7 +131,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/DSJR500.1c.col #C2000.5.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/DSJC1000.1.col #queen13_13.col #DSJR500.1c.col #C2000.5.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
 	./approxcolors test/dimacs/DSJC500.5.col
