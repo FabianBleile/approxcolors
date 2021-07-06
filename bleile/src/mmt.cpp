@@ -1,6 +1,6 @@
 #include "bleile/header/mmt.h"
 
-MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size)
+MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, bool setBounds)
  : graph(graph), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
  cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), N(graph->n)
 
@@ -11,6 +11,24 @@ MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size)
    logger.UB = N+1;
    measure_best_solution = N*N;
    R = N / 10 + 1; // pool spacing
+
+   if (setBounds) {
+     std::ifstream bounds_file("bleile/bounds.txt");
+     std::string s;
+     while(getline(bounds_file, s)) {
+       std::stringstream ss(s);
+       std::string inst;
+       int lb, ub;
+       ss >> inst >> lb >> ub;
+       if (this->graph.instance == inst) {
+         logger.UB = ub;
+         logger.LB = lb;
+         std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
+         break;
+       }
+     }
+     bounds_file.close();
+   }
 
    std::cout << "N = " << N << '\n';
 }
