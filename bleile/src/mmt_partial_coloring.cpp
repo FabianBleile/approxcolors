@@ -378,6 +378,8 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
 
       if (uncolored.size() == 0) {
         std::cout << "optimal coloring found - resetted" << '\n';
+        //std::cout << getNumColors() << '\n';
+        //toString(getNumColors()+1);
         for (size_t i = 0; i < graph->n; i++) {
           setColor(i, k);
         }
@@ -411,7 +413,7 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
     }
   }
   std::cout << "done : building distance matrix took " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
-  char filename[ ] = "le450_25d.spaceAnalysis.csv";
+  char filename[ ] = "DSJR500.1c.spaceAnalysis.csv";
   std::ofstream doc;
   doc.open(filename, std::ios::out | std::ios::trunc);
   for (size_t i = 0; i < numGoodColorings; i++) {
@@ -422,7 +424,7 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
     doc << distMat[i][numGoodColorings - 1] << '\n';
   }
   doc.close();
-  char filenameFitness[ ] = "le450_25d.spaceAnalysisFitness.csv";
+  char filenameFitness[ ] = "DSJR500.1c.spaceAnalysisFitness.csv";
   std::ofstream docFitness;
   docFitness.open(filenameFitness, std::ios::out | std::ios::trunc);
   for (size_t i = 0; i < numGoodColorings-1; i++) {
