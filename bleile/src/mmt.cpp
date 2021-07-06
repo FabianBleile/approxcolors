@@ -1,8 +1,8 @@
 #include "bleile/header/mmt.h"
 
-MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, double pGreedy, bool setBounds)
+MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, bool setBounds)
  : graph(graph), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
- cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), pGreedy(pGreedy), N(graph->n)
+ cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), N(graph->n)
 
  {
   // compute lower bound
@@ -21,7 +21,7 @@ MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, doub
       if (this->graph.instance == inst) {
         logger.UB = ub;
         logger.LB = lb;
-        std::cout << "Adopt bounds from file: LB = " << lb << ", UB = " << ub << '\n';
+        std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
         break;
       }
     }
@@ -155,7 +155,7 @@ void MMT::EADecision(int k) {
     if (poolSimilarity.find(std::make_pair(offspring.uncolored.size(), offspring.evaluate())) != poolSimilarity.end()) {
       // there is a similar individual in the pool
       // srand( (unsigned)time( NULL ) );
-
+      float pGreedy = 0.7;
       if ((float) rand()/RAND_MAX < pGreedy) {
         // drop offspring and generate new partial coloring with priorityGreedy()
         offspring = MMTPartialColoring(k, &graph, L, T);
