@@ -1,6 +1,6 @@
 #include "bleile/header/mmt.h"
 
-MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, double pGreedy)
+MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, double pGreedy, bool setBounds)
  : graph(graph), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
  cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), pGreedy(pGreedy), N(graph->n)
 
@@ -10,7 +10,23 @@ MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, doub
   logger.UB = N+1;
   measure_best_solution = N*N;
 
-  std::cout << "N = " << N << '\n';
+  if (setBounds) {
+    std::ifstream bounds_file("bleile/bounds.txt");
+    std::string s;
+    while(getline(bounds_file, s)) {
+      std::stringstream ss(s);
+      std::string inst;
+      int lb, ub;
+      ss >> inst >> lb >> ub;
+      if (this->graph.instance == inst) {
+        logger.UB = ub;
+        logger.LB = lb;
+        std::cout << "Adopt bounds from file: LB = " << lb << ", UB = " << ub << '\n';
+        break;
+      }
+    }
+    bounds_file.close();
+  }
 }
 
 void MMT::start(){
@@ -29,10 +45,10 @@ void MMT::start(){
 
 void MMT::PHASE0_EAInit(){
   MMTPartialColoring init = MMTPartialColoring(logger.UB, &graph, L, T);
-  init.dsatur();
-  init.tabuSearch();
-  cur_best_coloring = init;
-  logger.UB = init.getNumColors();
+  if (init.dsatur() || init.tabuSearch()) {
+    cur_best_coloring = init;
+    logger.UB = init.getNumColors();
+  };
   std::cout << "Init UB to " << logger.UB << "\n";
 }
 
@@ -105,7 +121,7 @@ void MMT::EADecision(int k) {
   clock_t t = clock();
   size_t iter = 0;
   while (((float) clock() - t)/CLOCKS_PER_SEC < time_limit_sec) {
-    if (!(iter % 2000)) {
+    if (!(iter % 10000)) {
       std::cout << "Anzahl Iterationen " << iter << '\t';
       printPoolFitness(pool);
       //printPoolDistance(pool, true);

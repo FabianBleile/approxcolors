@@ -26,7 +26,7 @@ public:
 
   MMTGraph graph;
 
-  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5);
+  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5, bool setBounds = false);
 
   void start();
 
