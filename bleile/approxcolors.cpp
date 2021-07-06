@@ -17,9 +17,9 @@ int main(int argc, char **av) {
 
   MMTGraph g(argc, av);
 
-  MMTPartialColoring explorer(28, &g, 1, 45);
+  MMTPartialColoring explorer(25, &g, 1, 45);
   explorer.dsatur();
-  std::vector<int> distDistrib = explorer.spaceAnalysis(200, 240, 600);
+  std::vector<int> distDistrib = explorer.spaceAnalysis(400, 1000, 600);
   for (size_t i = 0; i < distDistrib.size(); i++) {
     std::cout << distDistrib[i] << ',';
   }

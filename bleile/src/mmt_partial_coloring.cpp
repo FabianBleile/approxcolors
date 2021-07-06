@@ -411,7 +411,7 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
     }
   }
   std::cout << "done : building distance matrix took " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
-  char filename[ ] = "DSJC250.5.spaceAnalysis.csv";
+  char filename[ ] = "le450_25d.spaceAnalysis.csv";
   std::ofstream doc;
   doc.open(filename, std::ios::out | std::ios::trunc);
   for (size_t i = 0; i < numGoodColorings; i++) {
@@ -422,7 +422,7 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
     doc << distMat[i][numGoodColorings - 1] << '\n';
   }
   doc.close();
-  char filenameFitness[ ] = "DSJC250.5.spaceAnalysisFitness.csv";
+  char filenameFitness[ ] = "le450_25d.spaceAnalysisFitness.csv";
   std::ofstream docFitness;
   docFitness.open(filenameFitness, std::ios::out | std::ios::trunc);
   for (size_t i = 0; i < numGoodColorings-1; i++) {
