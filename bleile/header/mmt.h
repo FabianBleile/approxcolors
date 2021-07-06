@@ -26,7 +26,7 @@ public:
 
   MMTGraph graph;
 
-  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5);
+  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99);
 
   enum status {
     UNSOLVED = 1,
@@ -68,7 +68,6 @@ private:
   int L, T, time_limit_sec, pool_size, measure_best_solution;
   const int N;
   MMTPartialColoring cur_best_coloring;
-  double pGreedy;
   const double priority_noise = 0.5;
   int R; // pool spacing
 
@@ -79,9 +78,9 @@ private:
 
   bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, int pool_size);
 
-  int insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  int updatePool(MMTPartialColoring& new_individual, int old_individual,
+  void updatePool(MMTPartialColoring& new_individual, int old_individual,
     std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
   void insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool);
