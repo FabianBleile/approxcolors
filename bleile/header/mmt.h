@@ -65,7 +65,7 @@ private:
     int colOpt = -1;
   };
 
-  int L, T, time_limit_sec, pool_size, measure_best_solution;
+  int L, T, R, time_limit_sec, pool_size, measure_best_solution;
   const int N;
   MMTPartialColoring cur_best_coloring;
   double pGreedy;
@@ -76,13 +76,13 @@ private:
   const int numColOpt = 1000;
   std::queue< std::unordered_set<nodeid> > columns;
 
-  bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, int pool_size);
+  bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, int pool_size);
 
-  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool,
-    std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority);
+  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual,
-    std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority);
+  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+
+  float updatePGreedy(std::vector<MMTPartialColoring>& pool, int R);
 
   void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false);
 

@@ -47,9 +47,9 @@ DSJR500.1.col	12	13
 DSJR500.1c.col	85	87
 DSJR500.5.col	122	124
 flat300_28_0.col	28	32
-flat1000_50_0.col	15	51
-flat1000_60_0.col	14	86
-flat1000_76_0.col	14	86
+flat1000_50_0.col	50	51
+flat1000_60_0.col	60	86
+flat1000_76_0.col	76	86
 fpsol2.i.1.col	65	66
 fpsol2.i.2.col	30	31
 fpsol2.i.3.col	30	31
