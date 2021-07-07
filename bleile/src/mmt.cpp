@@ -5,27 +5,31 @@ MMT::MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size, bool
  cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), N(graph->n)
 
  {
-  // compute lower bound
-  // compute upper bound
-  logger.UB = N+1;
-  R = N/10 + 1;
-  if (setBounds) {
-    std::ifstream bounds_file("bleile/bounds.txt");
-    std::string s;
-    while(getline(bounds_file, s)) {
-      std::stringstream ss(s);
-      std::string inst;
-      int lb, ub;
-      ss >> inst >> lb >> ub;
-      if (this->graph.instance == inst) {
-        logger.UB = ub;
-        logger.LB = lb;
-        std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
-        break;
-      }
-    }
-    bounds_file.close();
-  }
+   assert(pool_size >= 3);
+   // compute lower bound
+   // compute upper bound
+   logger.UB = N+1;
+   R = N / 10 + 1; // pool spacing
+
+   if (setBounds) {
+     std::ifstream bounds_file("bleile/bounds.txt");
+     std::string s;
+     while(getline(bounds_file, s)) {
+       std::stringstream ss(s);
+       std::string inst;
+       int lb, ub;
+       ss >> inst >> lb >> ub;
+       if (this->graph.instance == inst) {
+         logger.UB = ub;
+         logger.LB = lb;
+         std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
+         break;
+       }
+     }
+     bounds_file.close();
+   }
+
+   std::cout << "N = " << N << '\n';
 }
 
 void MMT::start(){
@@ -34,11 +38,11 @@ void MMT::start(){
   PHASE1_EAOptimizer();
   if(logger.UB != logger.LB) {
     // PHASE2_ColumnOptimization();
-  } else {
-    cur_best_coloring.greedy();
   }
-  cur_best_coloring.checkColoring();
-  cur_best_coloring.toString();
+  if (cur_best_coloring.checkColoring()) {
+    cur_best_coloring.toString();
+  }
+
   logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
 }
 
@@ -53,24 +57,34 @@ void MMT::PHASE0_EAInit(){
 
 void MMT::PHASE1_EAOptimizer() {
   while (logger.UB > logger.LB) {
-    EADecision(logger.UB-1);
-    if (logger.status == EA_TIME_OUT) break;
+    clock_t t = clock();
+    MMT::status res = EADecision(logger.UB-1);
+    switch (res) {
+      case EA_TIME_OUT:
+        return;
+      default:
+        logger.status = res;
+        logger.lastItTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
+    }
     logger.UB = cur_best_coloring.getNumColors();
     std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
   }
 }
 
-void MMT::EADecision(int k) {
+MMT::status MMT::EADecision(int k) {
   // reset lastItNumOffsprings
-  logger.lastItNumOffsprings = 0;
+  size_t currentItNumOffsprings = 0;
 
   // priority vector : for every vertex keeps track of the total number this
   //                   vertex is left uncolored in the current pool
-  std::vector<int> priority(graph.n, -pool_size);
+  std::vector<int> priority(graph.n, pool_size);
 
   // pool : stores the current partial colorings
   //        init default pool with empty partial solutions
   std::vector<MMTPartialColoring> pool;
+
+  // dist : distance matrix for each indv in the pool
+  std::vector<std::vector<int> > dist(pool_size, std::vector<int>(pool_size, 0));
 
   // apply different initialization algorithms on the pool
   // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
@@ -80,9 +94,9 @@ void MMT::EADecision(int k) {
   for (size_t i = 0; i < dsatur_block_size; i++) {
     MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
     if(dsatur.dsatur() || dsatur.tabuSearch()) {
-      logger.status = INIT_DSATUR;
       cur_best_coloring = dsatur;
-      return;
+      logger.lastItNumOffsprings = currentItNumOffsprings;
+      return INIT_DSATUR;
     }
     insertPool(dsatur, pool, priority);
   }
@@ -92,9 +106,9 @@ void MMT::EADecision(int k) {
   for (size_t i = 0; i < seq_block_size; i++) {
     MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
     if(dsatur.greedy() || dsatur.tabuSearch()) {
-      logger.status = INIT_GREEDY;
       cur_best_coloring = dsatur;
-      return;
+      logger.lastItNumOffsprings = currentItNumOffsprings;
+      return INIT_GREEDY;
     }
     insertPool(dsatur, pool, priority);
   }
@@ -104,9 +118,9 @@ void MMT::EADecision(int k) {
   for (size_t i = 0; i < tabusearch_block_size; i++) {
     MMTPartialColoring tabusearch = MMTPartialColoring(k, &graph, L, T);
     if(tabusearch.tabuSearch()) {
-      logger.status = INIT_TABU;
       cur_best_coloring = tabusearch;
-      return;
+      logger.lastItNumOffsprings = currentItNumOffsprings;
+      return INIT_TABU;
     }
     insertPool(tabusearch, pool, priority);
   }
@@ -121,16 +135,18 @@ void MMT::EADecision(int k) {
       printPoolDistance(pool, false);
     }
 
-    auto parent_1 = std::next(std::begin(pool), (int) rand() % pool.size());
-    auto parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
+    MMTPartialColoring offspring(k, &graph, L, T);
+    std::vector<int> distOffspringToPool(pool_size, 0);
+
+    int parent_1 = (int) rand() % pool_size;
+    int parent_2 = (int) rand() % pool_size;
     while (parent_2 == parent_1) {
-      parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
+      parent_2 = (int) rand() % pool_size;
     }
 
-    MMTPartialColoring offspring(k, &graph, L, T);
     // generate offspring and if it is not already a solution improve by calling tabuSearch on it
-    if(offspring.crossover(&(*parent_1), &(*parent_2)) || offspring.tabuSearch()) {
-      logger.status = EA;
+    offspring = MMTPartialColoring(k, &graph, L, T);
+    if(offspring.crossover(&pool[parent_1], &pool[parent_2]) || offspring.tabuSearch()) {
       cur_best_coloring = offspring;
       return;
     }
@@ -151,6 +167,24 @@ void MMT::EADecision(int k) {
         std::cout << "pGreedy = " << pGreedy << '\n';
         pGreedy = updatePGreedy(pool, R);
       }
+      updatePool(offspring, elimIndv, pool, priority);
+      updateDistance(dist, distOffspringToPool, elimIndv);
+    } else if (nearIndvs.size() == 1) {
+      //std::cout << "1" << ' ';
+      elimIndv = nearIndvs[0];
+      if (offspring.fitness < pool[elimIndv].fitness) {
+        updatePool(offspring, elimIndv, pool, priority);
+        updateDistance(dist, distOffspringToPool, elimIndv);
+      }
+    } else {
+      if (pool[parent_1].fitness < pool[parent_2].fitness) {
+        elimIndv = parent_2;
+      } else {
+        elimIndv = parent_1;
+      }
+      updatePool(offspring, elimIndv, pool, priority);
+      updateDistance(dist, distOffspringToPool, elimIndv);
+      //std::cout << "0" << ' ';
     }
 
     // delete worst parent and insert child to pool
@@ -160,12 +194,61 @@ void MMT::EADecision(int k) {
     } else {
       updatePool(offspring, &(*parent_1), pool, priority);
     }
+
     iter++;
 
     logger.totNumOffsprings++;
-    logger.lastItNumOffsprings++;
+    currentItNumOffsprings++;
   }
-  logger.status = EA_TIME_OUT;
+  return EA_TIME_OUT;
+}
+
+MMTPartialColoring* MMT::getColoring(){
+  return &cur_best_coloring;
+}
+
+std::stringstream MMT::streamLogs(){
+  std::stringstream logs;
+  logs << logger.status << ',';
+  logs << logger.totTimeInSec << ',' << logger.lastItTimeInSec << ',';
+  logs << logger.totNumOffsprings << ',' << logger.lastItNumOffsprings<< ',';
+  logs << logger.UB; /* << ',' << logger.LB << ',';
+  logs << logger.colOpt;*/
+  return logs;
+}
+
+void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+  // update priority
+  for (const auto & uncol_v : new_individual.uncolored) {
+    priority[uncol_v]--;
+  }
+
+  // update pool
+  pool.push_back(new_individual);
+
+  // update columns
+  if(new_individual.evaluate() < measure_best_solution){
+    measure_best_solution = new_individual.evaluate();
+    //addStableSets(&new_individual);
+  }
+
+  return;
+}
+
+void MMT::updatePool(MMTPartialColoring& new_individual, int old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+  // update
+  for (const auto & uncol_v : pool[old_individual].uncolored) priority[uncol_v]++;
+  for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]--;
+
+  // update pool
+  pool[old_individual] = new_individual;
+
+  // update columns
+  if(new_individual.evaluate() < measure_best_solution){
+    measure_best_solution = new_individual.evaluate();
+    //addStableSets(&new_individual);
+  }
+
   return;
 }
 
@@ -242,4 +325,5 @@ void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
     best = temp < best ? temp : best;
   }
   std::cout << "|\tbest = " << best << "; average = " << sum / pool.size() << '\n';
+}
 }

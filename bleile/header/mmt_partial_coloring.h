@@ -33,13 +33,15 @@ public:
   std::vector<color> colors;
   std::unordered_set<nodeid> uncolored;
 
+  int fitness;
+
   bool greedy(const vector<nodeid>& v = vector<nodeid>());
 
   bool dsatur();
 
   int distanceTo(PartialColoring* S, bool exact = false) ;
 
-  measure evaluate() const ;
+  measure evaluate() ;
 
   void setK(int k);
 
@@ -52,6 +54,8 @@ public:
   int getNumColors() const ;
 
   void toString(int maxLines = 14) const ;
+
+  bool operator < (const PartialColoring& S) const ;
 
 private:
   int dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const ;
@@ -82,7 +86,9 @@ public:
 
   void lockColoring() ;
 
-  void checkColoring() ;
+  bool checkColoring() ;
+
+  int getFitness();
 
   std::vector<std::unordered_set<nodeid> > color_classes;
 

@@ -28,22 +28,6 @@ public:
 
   MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, bool setBounds = false);
 
-  void start();
-
-  void PHASE0_EAInit();
-
-  void PHASE1_EAOptimizer();
-
-  void EADecision(int k);
-
-  void PHASE2_ColumnOptimization();
-
-  MMTPartialColoring* getColoring();
-
-  std::stringstream streamLogs();
-
-private:
-
   enum status {
     UNSOLVED = 1,
     INIT_GREEDY = 2,
@@ -53,6 +37,22 @@ private:
     COl_OPT = 32,
     EA_TIME_OUT = 64
   };
+
+  void start();
+
+  void PHASE0_EAInit();
+
+  void PHASE1_EAOptimizer();
+
+  status EADecision(int k);
+
+  void PHASE2_ColumnOptimization();
+
+  MMTPartialColoring* getColoring();
+
+  std::stringstream streamLogs();
+
+private:
 
   struct LogData {
     status status = UNSOLVED;
@@ -68,8 +68,8 @@ private:
   int L, T, R, time_limit_sec, pool_size, measure_best_solution;
   const int N;
   MMTPartialColoring cur_best_coloring;
-  double pGreedy;
   const double priority_noise = 0.5;
+  int R; // pool spacing
 
   LogData logger;
 
@@ -80,7 +80,11 @@ private:
 
   void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  void updatePool(MMTPartialColoring& new_individual, int old_individual,std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+
+  void insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool);
+
+  void updateDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool, int elimIndv);
 
   float updatePGreedy(std::vector<MMTPartialColoring>& pool, int R);
 
