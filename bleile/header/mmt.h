@@ -65,11 +65,10 @@ private:
     int colOpt = -1;
   };
 
-  int L, T, R, time_limit_sec, pool_size, measure_best_solution;
+  int L, T, R, timeLimit, PS;
+  int updateLimit, deltaL, deltaPS;
   const int N;
   MMTPartialColoring cur_best_coloring;
-  const double priority_noise = 0.5;
-  int R; // pool spacing
 
   LogData logger;
 
@@ -80,13 +79,13 @@ private:
 
   void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  void updatePool(MMTPartialColoring& new_individual, int old_individual,std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual,std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
-  void insertDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool);
-
-  void updateDistance(std::vector<std::vector<int> >& dist, std::vector<int>& distOffspringToPool, int elimIndv);
+  void removePool(int indexRemoveIndv, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
   float updatePGreedy(std::vector<MMTPartialColoring>& pool, int R);
+
+  std::vector<int> getWorstIndvs(std::vector<MMTPartialColoring>& pool, int returnSize);
 
   void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false);
 

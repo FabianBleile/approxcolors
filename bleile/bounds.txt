@@ -60,7 +60,7 @@ inithx.i.1.col	54	55
 inithx.i.2.col	31	32
 inithx.i.3.col	31	32
 jean.col	10	11
-latin_square_10.col	90	106
+latin_square_10.col	90	102
 le450_15a.col	15	16
 le450_15b.col	15	16
 le450_15c.col	15	16

@@ -131,10 +131,10 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/DSJR500.1c.col #DSJC500.9.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/R1000.5.col #latin_square_10.col #DSJC500.9.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
-	./approxcolors test/dimacs/DSJC500.5.col
+	./approxcolors test/dimacs/DSJC250.5.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con

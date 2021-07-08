@@ -18,6 +18,8 @@ MMTGraph::MMTGraph(int argc, char **av) {
     adjList[(elist)[2*i]].push_back((elist)[2*i + 1]);
     adjList[(elist)[2*i + 1]].push_back((elist)[2*i]);
   }
+
+  dens = (float) m/(n*(n+1)/2);
 }
 
 MMTGraph::MMTGraph(MMTGraph * input) {

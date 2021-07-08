@@ -15,6 +15,7 @@ using nodeid = uint32_t;
 class MMTGraph {
 public:
   int n, m;
+  float dens;
 
   std::string instance;
 
