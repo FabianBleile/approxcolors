@@ -161,7 +161,7 @@ MMT::status MMT::EADecision(int k) {
         // there is a near individual in the pool
         if ((float) rand()/RAND_MAX < pGreedy) {
           // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(k, &graph, L, T);
+          offspring = MMTPartialColoring(k, &graph, 10*L, T);
 
           if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
             cur_best_coloring = offspring;
@@ -190,7 +190,7 @@ MMT::status MMT::EADecision(int k) {
       currentItNumOffsprings++;
     }
     std::cout << "updateLimit = " << updateLimit << " poolDensityCounter = " << poolDensityCounter << '\n';
-    if (poolDensityCounter < updateLimit/100) {
+    /*if (poolDensityCounter < updateLimit/100) {
       for (size_t i = 0; i < deltaPS; i++) {
         MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, L, T);
 
@@ -201,25 +201,24 @@ MMT::status MMT::EADecision(int k) {
         }
         insertPool(newIndv, pool, priority);
       }
-    } else if (poolDensityCounter > updateLimit/3) {
-      if (poolDensityCounter > 4*updateLimit/5 && PS-deltaPS/2 >= 3) {
-        std::vector<int> worstIndvs = getWorstIndvs(pool, deltaPS/2);
-        std::sort(worstIndvs.begin(), worstIndvs.end());
-        for (size_t i = 0; i < worstIndvs.size(); i++) {
-          worstIndvs[i] -= i;
-        }
-        for (auto indx : worstIndvs) removePool(indx,pool,priority);
+    } else*/
+    if (poolDensityCounter > updateLimit/2 && PS > 3) {
+      int numRemoveIndvs = std::min(PS-3, deltaPS/2);
+      std::vector<int> worstIndvs = getWorstIndvs(pool, deltaPS/2);
+      std::sort(worstIndvs.begin(), worstIndvs.end());
+      for (size_t i = 0; i < worstIndvs.size(); i++) {
+        worstIndvs[i] -= i;
       }
+      for (auto indx : worstIndvs) removePool(indx,pool,priority);
+
+      PS = pool.size();
     }
 
     L += deltaL;
-
-    PS = pool.size();
     pGreedy = updatePGreedy(pool, R);
 
     std::cout << "L = " << L << "; "
-              << "PS = " << PS << "; "
-              << "poolDensityCounter/updateLimit = " << poolDensityCounter/updateLimit << "; "
+              << "PS = " << PS
               << '\n';
   }
   return EA_TIME_OUT;
@@ -258,13 +257,10 @@ void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old
 
 void MMT::removePool(int indexRemoveIndv, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
   // update
-  std::cout << "seg fault here ?" << '\n';
   for (const auto & uncol_v : pool[indexRemoveIndv].uncolored) priority[uncol_v]--;
-  std::cout << "seg fault there ?" << '\n';
 
   // remove from pool
   pool.erase(pool.begin() + indexRemoveIndv);
-  std::cout << "ugh ?" << '\n';
 }
 
 float MMT::updatePGreedy(std::vector<MMTPartialColoring>& pool, int R) {
