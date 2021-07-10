@@ -12,11 +12,18 @@ MMTGraph::MMTGraph(int argc, char **av) {
   int *elist;
   read_graph(argc, av, &n, &m, &elist);
 
-  adjList = std::vector<std::vector<nodeid> >(n,std::vector<nodeid>());
-
+  // interpret every input graph as symmetric and if edges (i j) and (j i) are given handle it
+  std::vector<std::unordered_set<nodeid> > adjListSets(n,std::unordered_set<nodeid>());
   for (size_t i = 0; i < m; i++) {
-    adjList[(elist)[2*i]].push_back((elist)[2*i + 1]);
-    adjList[(elist)[2*i + 1]].push_back((elist)[2*i]);
+    adjListSets[(elist)[2*i]].insert((elist)[2*i + 1]);
+    adjListSets[(elist)[2*i + 1]].insert((elist)[2*i]);
+  }
+
+
+  adjList = std::vector<std::vector<nodeid> >(n);
+  for (size_t i = 0; i < n; i++) {
+    adjList[i] = std::vector<nodeid>(adjListSets[i].begin(), adjListSets[i].end());
+    std::sort(adjList[i].begin(), adjList[i].end());
   }
 }
 
@@ -54,7 +61,7 @@ void MMTGraph::toString(int maxLines, bool real) const
     }
     for (auto &v : adjList[u]) {
       if (real || u < v) {
-         std::cout << u << " " << v << '\t';
+         std::cout << u << " " << v << " ; ";
       }
     }
     std::cout << "("<< getDegree(u) <<")" << '\n';

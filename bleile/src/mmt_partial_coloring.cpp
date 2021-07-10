@@ -326,6 +326,8 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
 // discover the space with a long tabuSearch.
 // safe good colorings and create a distance matrice
 std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int maxNumGoodColorings = 10000, int maxTime = 60){
+  std::cout << "k = " << k << '\n';
+
   // collect high quality colorings with fitness equal or better than fitnessBoundary
   std::vector<PartialColoring> goodColorings;
   // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
@@ -378,8 +380,8 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
 
       if (uncolored.size() == 0) {
         std::cout << "optimal coloring found - resetted"  << goodColorings.size() << '\n';
-        //std::cout << getNumColors() << '\n';
-        //toString(getNumColors()+1);
+        std::cout << getNumColors() << '\n';
+        toString(getNumColors()+1);
         for (size_t i = 0; i < graph->n; i++) {
           setColor(i, k);
         }
@@ -413,7 +415,7 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
     }
   }
   std::cout << "done : building distance matrix took " << ((float) clock() - t)/CLOCKS_PER_SEC << " secs" << '\n';
-  char filename[ ] = "queen13_13.spaceAnalysis.csv";
+  char filename[ ] = "queen11_11.spaceAnalysis.csv";
   std::ofstream doc;
   doc.open(filename, std::ios::out | std::ios::trunc);
   for (size_t i = 0; i < numGoodColorings; i++) {
@@ -424,7 +426,7 @@ std::vector<int> MMTPartialColoring::spaceAnalysis(measure fitnessBoundary, int 
     doc << distMat[i][numGoodColorings - 1] << '\n';
   }
   doc.close();
-  char filenameFitness[ ] = "queen13_13.spaceAnalysisFitness.csv";
+  char filenameFitness[ ] = "queen11_11.spaceAnalysisFitness.csv";
   std::ofstream docFitness;
   docFitness.open(filenameFitness, std::ios::out | std::ios::trunc);
   for (size_t i = 0; i < numGoodColorings-1; i++) {
