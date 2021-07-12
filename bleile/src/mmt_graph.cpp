@@ -25,6 +25,7 @@ MMTGraph::MMTGraph(int argc, char **av) {
 MMTGraph::MMTGraph(MMTGraph * input) {
   n = input->n;
   m = input->m;
+  dens = input->dens;
   instance = input->instance;
   adjList = input->adjList;
 }

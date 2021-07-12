@@ -13,7 +13,7 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
    updateLimit = 1000000 / N;
    L = 10000;
    PS = 10;
-   deltaL = L * graph->dens;
+   deltaL =  L * graph->dens;
    deltaPS =  PS * graph->dens;
 
    if (setBounds) {
@@ -25,7 +25,7 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
        int lb, ub;
        ss >> inst >> lb >> ub;
        if (this->graph.instance == inst) {
-         logger.UB = ub;
+         // logger.UB = ub;
          logger.LB = lb;
          std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
          break;
@@ -59,9 +59,13 @@ void MMT::PHASE0_EAInit(){
 }
 
 void MMT::PHASE1_EAOptimizer() {
+  // pool : stores the current partial colorings
+  //        init default pool with empty partial solutions
+  std::vector<MMTPartialColoring> pool;
+
   while (logger.UB > logger.LB) {
     clock_t t = clock();
-    MMT::status res = EADecision(logger.UB-1);
+    MMT::status res = EADecision(logger.UB-1, pool);
     switch (res) {
       case EA_TIME_OUT:
         return;
@@ -74,56 +78,30 @@ void MMT::PHASE1_EAOptimizer() {
   }
 }
 
-MMT::status MMT::EADecision(int k) {
-  // reset lastItNumOffsprings
-  size_t currentItNumOffsprings = 0;
+MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
 
   // priority vector : for every vertex keeps track of the total number this
   //                   vertex is left uncolored in the current pool
   std::vector<int> priority(graph.n, PS);
 
-  // pool : stores the current partial colorings
-  //        init default pool with empty partial solutions
-  std::vector<MMTPartialColoring> pool;
+  std::cout << pool.size() << '\n';
 
-  // apply different initialization algorithms on the pool
-  // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
-
-  // DSATUR Block
-  int dsatur_block_size = PS/3;
-  for (size_t i = 0; i < dsatur_block_size; i++) {
-    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
-    if(dsatur.dsatur() || dsatur.tabuSearch()) {
-      cur_best_coloring = dsatur;
-      logger.lastItNumOffsprings = currentItNumOffsprings;
-      return INIT_DSATUR;
+  if (pool.empty()) {
+    MMT::status res = initPool(k, pool, priority);
+    if (res != UNSOLVED) {
+      return res;
     }
-    insertPool(dsatur, pool, priority);
+  } else {
+    std::vector<MMTPartialColoring> new_pool;
+    for (auto& indv : pool) {
+      indv.setK(logger.UB-1);
+      insertPool(indv, new_pool, priority);
+    }
+    pool = new_pool;
   }
 
-  // SEQ Block
-  int seq_block_size = PS/3;
-  for (size_t i = 0; i < seq_block_size; i++) {
-    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
-    if(dsatur.greedy() || dsatur.tabuSearch()) {
-      cur_best_coloring = dsatur;
-      logger.lastItNumOffsprings = currentItNumOffsprings;
-      return INIT_GREEDY;
-    }
-    insertPool(dsatur, pool, priority);
-  }
-
-  // TABU SEARCH Block
-  int tabusearch_block_size = PS - seq_block_size - dsatur_block_size;
-  for (size_t i = 0; i < tabusearch_block_size; i++) {
-    MMTPartialColoring tabusearch = MMTPartialColoring(k, &graph, L, T);
-    if(tabusearch.tabuSearch()) {
-      cur_best_coloring = tabusearch;
-      logger.lastItNumOffsprings = currentItNumOffsprings;
-      return INIT_TABU;
-    }
-    insertPool(tabusearch, pool, priority);
-  }
+  // reset lastItNumOffsprings
+  size_t currentItNumOffsprings = 0;
 
   clock_t t = clock();
   float pGreedy = updatePGreedy(pool, R);
@@ -134,6 +112,8 @@ MMT::status MMT::EADecision(int k) {
     for (size_t iter = 0; iter < updateLimit; iter++) {
       MMTPartialColoring offspring(k, &graph, L, T);
       std::vector<int> distOffspringToPool(PS, 0);
+
+      std::cout << "hey there" << '\n';
 
       int parent_1 = (int) rand() % PS;
       int parent_2 = (int) rand() % PS;
@@ -161,7 +141,7 @@ MMT::status MMT::EADecision(int k) {
         // there is a near individual in the pool
         if ((float) rand()/RAND_MAX < pGreedy) {
           // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(k, &graph, 10*L, T);
+          offspring = MMTPartialColoring(k, &graph, 2*L, T);
 
           if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
             cur_best_coloring = offspring;
@@ -190,7 +170,8 @@ MMT::status MMT::EADecision(int k) {
       currentItNumOffsprings++;
     }
     std::cout << "updateLimit = " << updateLimit << " poolDensityCounter = " << poolDensityCounter << '\n';
-    /*if (poolDensityCounter < updateLimit/100) {
+    std::cout << "PS = " << PS << " N = " << N << '\n';
+    if (poolDensityCounter < updateLimit/100 && PS < N/20) {
       for (size_t i = 0; i < deltaPS; i++) {
         MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, L, T);
 
@@ -201,8 +182,7 @@ MMT::status MMT::EADecision(int k) {
         }
         insertPool(newIndv, pool, priority);
       }
-    } else*/
-    if (poolDensityCounter > updateLimit/2 && PS > 3) {
+    } else if (poolDensityCounter > updateLimit/2 && PS > 3) {
       int numRemoveIndvs = std::min(PS-3, deltaPS/2);
       std::vector<int> worstIndvs = getWorstIndvs(pool, deltaPS/2);
       std::sort(worstIndvs.begin(), worstIndvs.end());
@@ -213,8 +193,9 @@ MMT::status MMT::EADecision(int k) {
 
       PS = pool.size();
     }
-
-    L += deltaL;
+    if (L < 250*N) {
+      L += deltaL;
+    }
     pGreedy = updatePGreedy(pool, R);
 
     std::cout << "L = " << L << "; "
@@ -236,6 +217,49 @@ std::stringstream MMT::streamLogs(){
   logs << logger.UB << ',' << logger.LB << ',';
   logs << logger.colOpt;
   return logs;
+}
+
+MMT::status MMT::initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority) {
+  // apply different initialization algorithms on the pool
+  // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
+
+  // DSATUR Block
+  int dsatur_block_size = PS/3;
+  for (size_t i = 0; i < dsatur_block_size; i++) {
+    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, this->L, this->T);
+    if(dsatur.dsatur() || dsatur.tabuSearch()) {
+      cur_best_coloring = dsatur;
+      logger.lastItNumOffsprings = 0;
+      return MMT::INIT_DSATUR;
+    }
+    insertPool(dsatur, pool, priority);
+  }
+
+  // SEQ Block
+  int seq_block_size = PS/3;
+  for (size_t i = 0; i < seq_block_size; i++) {
+    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
+    if(dsatur.greedy() || dsatur.tabuSearch()) {
+      cur_best_coloring = dsatur;
+      logger.lastItNumOffsprings = 0;
+      return MMT::INIT_GREEDY;
+    }
+    insertPool(dsatur, pool, priority);
+  }
+
+  // TABU SEARCH Block
+  int tabusearch_block_size = PS - seq_block_size - dsatur_block_size;
+  for (size_t i = 0; i < tabusearch_block_size; i++) {
+    MMTPartialColoring tabusearch = MMTPartialColoring(k, &graph, L, T);
+    if(tabusearch.tabuSearch()) {
+      cur_best_coloring = tabusearch;
+      logger.lastItNumOffsprings = 0;
+      return MMT::INIT_TABU;
+    }
+    insertPool(tabusearch, pool, priority);
+  }
+
+  return UNSOLVED;
 }
 
 void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){

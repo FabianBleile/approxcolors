@@ -125,13 +125,13 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	scan-build -v -o clang make -j
 
 testall:
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/mmt_delta_subset/*), echo $(file);)
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/mmt_delta_subset/*), ./approxcolors $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), echo $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), ./approxcolors $(file);)
 
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/R1000.5.col #latin_square_10.col #DSJC500.9.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/flat1000_60_0.col #R1000.5.col #latin_square_10.col #DSJC500.9.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
 	./approxcolors test/dimacs/DSJC250.5.col

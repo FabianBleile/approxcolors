@@ -44,7 +44,7 @@ public:
 
   void PHASE1_EAOptimizer();
 
-  status EADecision(int k);
+  status EADecision(int k, std::vector<MMTPartialColoring>& pool);
 
   void PHASE2_ColumnOptimization();
 
@@ -75,7 +75,7 @@ private:
   const int numColOpt = 1000;
   std::queue< std::unordered_set<nodeid> > columns;
 
-  bool initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority, int pool_size);
+  status initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
   void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
 
