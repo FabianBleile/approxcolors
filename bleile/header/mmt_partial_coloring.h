@@ -76,7 +76,7 @@ public:
 
   // TODO : constructor from superclass
 
-  bool crossover(MMTPartialColoring* S1, MMTPartialColoring* S2);
+  bool crossover(MMTPartialColoring& S1, MMTPartialColoring& S2);
 
   bool tabuSearch();
 

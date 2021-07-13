@@ -118,7 +118,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
 
       // generate offspring and if it is not already a solution improve by calling tabuSearch on it
       offspring = MMTPartialColoring(k, &graph, L, T);
-      if(offspring.crossover(&pool[parent_1], &pool[parent_2]) || offspring.tabuSearch()) {
+      if(offspring.crossover(pool[parent_1], pool[parent_2]) || offspring.tabuSearch()) {
         cur_best_coloring = offspring;
         logger.lastItNumOffsprings = currentItNumOffsprings;
         return EA;

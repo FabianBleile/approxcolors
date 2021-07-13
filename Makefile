@@ -71,12 +71,12 @@ export CXX=g++
 # debugging with valgrind, as the commercial solvers impose valgrind errors internally.
 #
 # CALLGRIND :
-# 	valgrind --tool=callgrind ./mmt test/instances/queen13_13.col
+# 	valgrind --tool=callgrind ./approxcolors test/dimacs/DSJC250.5.col
 #		quick inspect on https://www.speedscope.app/
 #
 # VALLGRIND MEMORY LEAK CHECK:
-#		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen6_6.col
-#		CFLAGS+= -DCOMPILE_FOR_VALGRIND
+#		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen10_10.col
+CFLAGS+= -DCOMPILE_FOR_VALGRIND
 CXXFLAGS += -g
 
 
