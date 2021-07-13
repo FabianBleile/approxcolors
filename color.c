@@ -38,6 +38,8 @@
 
 #include "color_private.h"
 
+//#include "bleile/header/mmt.h"
+
 static int debug = 0;
 /* 'double integral_incumbent_tolerance' is used only in an assertion,
    but not in actually performing code.*/
@@ -3244,7 +3246,11 @@ static int init_root_colordata (COLORproblem* colorproblem)
              rval = COLORgreedy (cd->ncount, cd->ecount, cd->elist,
                                  &(cd->ccount), &(cd->cclasses));
              COLORcheck_rval (rval, "COLORgreedy failed");
-          } else {
+          } /*else {
+             rval = COLORbleile (cd->ncount, cd->ecount, cd->elist);
+             COLORcheck_rval (rval, "COLORbleile failed");
+          }*/
+          else {
              rval = COLORdsatur (cd->ncount, cd->ecount, cd->elist,
                                  &(cd->ccount), &(cd->cclasses));
              COLORcheck_rval (rval, "COLORdsatur failed");

@@ -12,14 +12,13 @@ MMTGraph::MMTGraph(int argc, char **av) {
   int *elist;
   read_graph(argc, av, &n, &m, &elist);
 
-  adjList = std::vector<std::vector<nodeid> >(n,std::vector<nodeid>());
+  initFromElist(n, m, elist);
 
-  for (size_t i = 0; i < m; i++) {
-    adjList[(elist)[2*i]].push_back((elist)[2*i + 1]);
-    adjList[(elist)[2*i + 1]].push_back((elist)[2*i]);
-  }
+  delete elist;
+}
 
-  dens = (float) m/(n*(n+1)/2);
+MMTGraph::MMTGraph(int ncount, int ecount, int *elist) {
+  initFromElist(ncount, ecount, elist);
 }
 
 MMTGraph::MMTGraph(MMTGraph * input) {
@@ -28,6 +27,17 @@ MMTGraph::MMTGraph(MMTGraph * input) {
   dens = input->dens;
   instance = input->instance;
   adjList = input->adjList;
+}
+
+void MMTGraph::initFromElist(int ncount, int ecount, int *elist){
+  adjList = std::vector<std::vector<nodeid> >(n,std::vector<nodeid>());
+
+  for (size_t i = 0; i < m; i++) {
+    adjList[(elist)[2*i]].push_back((elist)[2*i + 1]);
+    adjList[(elist)[2*i + 1]].push_back((elist)[2*i]);
+  }
+
+  dens = (float) m/(n*(n+1)/2);
 }
 
 bool MMTGraph::isAdj(const nodeid u, const nodeid v) const {

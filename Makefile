@@ -74,14 +74,11 @@ export CXX=g++
 # 	valgrind --tool=callgrind ./mmt test/instances/queen13_13.col
 #		quick inspect on https://www.speedscope.app/
 #
-#CFLAGS+= -DCOMPILE_FOR_VALGRIND
+# VALLGRIND MEMORY LEAK CHECK:
+#		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen6_6.col
+#		CFLAGS+= -DCOMPILE_FOR_VALGRIND
 CXXFLAGS += -g
 
-
-
-####################################################
-# Below this comment changes should be unnecessary.#
-####################################################
 
 BLEILE_DIR=bleile
 BLEILE_HEADER=$(BLEILE_DIR)/header
@@ -131,7 +128,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/flat1000_60_0.col #R1000.5.col #latin_square_10.col #DSJC500.9.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/DSJR500.1c.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
 	./approxcolors test/dimacs/DSJC250.5.col

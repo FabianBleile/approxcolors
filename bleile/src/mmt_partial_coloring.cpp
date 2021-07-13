@@ -254,79 +254,58 @@ MMTPartialColoring::MMTPartialColoring(const int k, MMTGraph * graph, int L, int
   // everything handled by the super constructor
 }
 
-bool MMTPartialColoring::crossover(MMTPartialColoring* S1, MMTPartialColoring* S2){
+bool MMTPartialColoring::crossover(MMTPartialColoring& S1, MMTPartialColoring& S2){
   assert(color_classes.size() == 0);
-  assert(this->k == S1->k && this->k == S2->k);
-  assert(this->graph == S1->graph && this->graph == S2->graph);
+  assert(this->k == S1.k && this->k == S2.k);
+  assert(this->graph == S1.graph && this->graph == S2.graph);
 
-  S1->lockColoring();
-  S2->lockColoring();
+  S1.lockColoring();
+  S2.lockColoring();
 
   // generate vectors with size of each color class for both parents
-  std::vector<int> s1_c(k), s2_c(k);
-  auto it = S1->color_classes.begin();
-  std::generate(s1_c.begin(), s1_c.end(), [&] () mutable { return it != S1->color_classes.end() ? (*it++).size() : 0; });
-  it = S2->color_classes.begin();
-  std::generate(s2_c.begin(), s2_c.end(), [&] () mutable { return it != S2->color_classes.end() ? (*it++).size() : 0; });
-
-  // init number of colored nodes from Parents not colored in child coloring
-  int* s1_n = new int(std::accumulate(s1_c.begin(), s1_c.end(), 0));
-  int* s2_n = new int(std::accumulate(s2_c.begin(), s2_c.end(), 0));
+  std::vector<int> S1_cc(k), S2_cc(k);
+  auto it = S1.color_classes.begin();
+  std::generate(S1_cc.begin(), S1_cc.end(),[&] () mutable {return it != S1.color_classes.end() ? (*it++).size() : 0; } );
+  it = S2.color_classes.begin();
+  std::generate(S2_cc.begin(), S2_cc.end(),[&] () mutable {return it != S2.color_classes.end() ? (*it++).size() : 0; } );
 
   // init currentColor
   color cur_color = 0;
 
   // iterate until all color classes of child have been populated
   // or there are no more colored nodes in parents which havn't already been colored in childs coloring
-  while (cur_color < k && *s1_n + *s2_n > 0) {
+  bool alternate = true;
+  MMTPartialColoring* act_parent = &S1;
+  std::vector<int>* act_parent_cc = &S1_cc;
+  MMTPartialColoring* pas_parent = &S2;
+  std::vector<int>* pas_parent_cc = &S2_cc;
 
-    // SelectParent() :
-    // A[0,1,2] containing pointer to graph coloring Si, vect si_c, int si_n for chosen parent
-    // A[3,4,5] accordingly the other
-    auto A = selectParent(S1, S2, &s1_c, &s2_c, s1_n, s2_n, cur_color);
-
+  for (size_t cur_color = 0; cur_color < k; cur_color++) {
     // select parent color with the greatest remaining size
-    color h = std::distance(std::get<1>(A)->begin(), std::max_element(std::get<1>(A)->begin(), std::get<1>(A)->end()));
+    color h = std::distance(act_parent_cc->begin(),std::max_element(act_parent_cc->begin(),act_parent_cc->end()));
 
-    // std::cout << "chosen color : " << h << " and h vect " << (std::get<0>(A)->color_classes[h]).size() << '\n';
-
-    for (const auto &u : std::get<0>(A)->color_classes[h]) {
-
-      // insert returns <it to element, bool if was inserted>
-      // if inserted update si_c and si_n
-      if (this->colors[u] == this->k) {
-        this->colors[u] = cur_color;
-        (*std::get<1>(A))[h]--;     // lower color class size of parent
-        #pragma GCC diagnostic ignored "-Wunused-value"
-        (*std::get<2>(A))--;           // lower total sum of nodes color in parent coloring but not in child coloring
-        try {
-          color u_col_non_parent = std::get<3>(A)->colors.at(u);
-          if (u_col_non_parent < k) {
-            (*std::get<4>(A))[u_col_non_parent]--;     // lower color class size of non parent
-            (*std::get<5>(A))--;                                   // lower total sum of nodes color in non parent coloring but not in child coloring
-          }
-        } catch (std::out_of_range e) {
-          assert(true == false);    // just don't jump in here please :D
+    for (const auto &u : act_parent->color_classes[h]) {
+      if (colors[u] == k) {
+        setColor(u, cur_color);
+        if (pas_parent->colors[u] < k) {
+          pas_parent_cc->at(h)--;
         }
       }
     }
+    act_parent_cc->at(h) = 0;
 
-    // color class h of parent should be empty by now
-    assert((*std::get<1>(A))[h] == 0);
-
-    // move to next color
-    cur_color++;
+    // SelectParent() :
+    if (alternate) {
+      auto temp_parent = act_parent;
+      act_parent = pas_parent;
+      pas_parent = temp_parent;
+      auto temp_parent_cc = act_parent_cc;
+      act_parent_cc = pas_parent_cc;
+      pas_parent_cc = temp_parent_cc;
+    }
   }
+
   return evaluate() == 0;
-}
-
-std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialColoring*, std::vector<int>*, int* > MMTPartialColoring::selectParent(const MMTPartialColoring* s1, const MMTPartialColoring* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color){
-
-  if ( ( *s1_n > 0 && *s2_n > 0 && !(cur_color % 2) ) || *s2_n == 0) {
-    return std::make_tuple(s1, s1_c, s1_n, s2, s2_c, s2_n);
-  } else {
-    return std::make_tuple(s2, s2_c, s2_n, s1, s1_c, s1_n);
-  }
 }
 
 // Mutation
@@ -342,7 +321,9 @@ bool MMTPartialColoring::tabuSearch(){
   */
 
   assert(L>0 && T>0);
-  assert(color_classes.size() == 0);
+  if (color_classes.size() != 0) {
+    color_classes.clear();
+  }
 
   // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
   std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
@@ -396,7 +377,9 @@ bool MMTPartialColoring::tabuSearch(){
 // minimize over |delta(V_{k+1})|
 bool MMTPartialColoring::tabuSearchSimplified(){
   assert(L>0 && T>0);
-  assert(color_classes.size() == 0);
+  if (color_classes.size() != 0) {
+    color_classes.clear();
+  }
 
   // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
   std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));

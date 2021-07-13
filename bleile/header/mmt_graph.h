@@ -21,7 +21,11 @@ public:
 
   MMTGraph(int argc, char **av) ;
 
+  MMTGraph(int ncount, int ecount, int *elist) ;
+
   MMTGraph(MMTGraph * input) ;
+
+  void initFromElist(int ncount, int ecount, int *elist);
 
   bool isAdj(const nodeid u, const nodeid v) const ;
 
