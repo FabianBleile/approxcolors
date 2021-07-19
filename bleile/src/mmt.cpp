@@ -20,8 +20,8 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
      while(getline(bounds_file, s)) {
        std::stringstream ss(s);
        std::string inst;
-       int lb, ub;
-       ss >> inst >> lb >> ub;
+       int lb, ub, lazylb;
+       ss >> inst >> lb >> ub >> lazylb;
        if (this->graph.instance == inst) {
          // logger.UB = ub;
          logger.LB = lb;
@@ -143,15 +143,15 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
             logger.lastItNumOffsprings = currentItNumOffsprings;
             return EA;
           }
-
-          int worstNearIndv = 0;
-          for (size_t i = 1; i < nearIndvs.size(); i++) {
-            if (pool[nearIndvs[i]].evaluate() > pool[worstNearIndv].evaluate()) {
-              worstNearIndv = nearIndvs[i];
-            }
-          }
-          updatePool(offspring, &pool[worstNearIndv], pool, priority);
         }
+
+        int worstNearIndv = 0;
+        for (size_t i = 1; i < nearIndvs.size(); i++) {
+          if (pool[nearIndvs[i]].evaluate() > pool[worstNearIndv].evaluate()) {
+            worstNearIndv = nearIndvs[i];
+          }
+        }
+        updatePool(offspring, &pool[worstNearIndv], pool, priority);
       } else {
         // delete worst parent and insert child to pool
         if (pool[parent_1].evaluate() <= pool[parent_2].evaluate()) {
@@ -166,7 +166,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
     }
     std::cout << "updateLimit = " << updateLimit << " poolDensityCounter = " << poolDensityCounter << '\n';
     std::cout << "PS = " << PS << " N = " << N << '\n';
-    if (poolDensityCounter < 10 && PS < N/20) {
+    if (poolDensityCounter < updateLimit/5 && PS < N/20) {
       for (size_t i = 0; i < deltaPS; i++) {
         MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, L, T);
 
@@ -178,7 +178,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         insertPool(newIndv, pool, priority);
         PS++;
       }
-    } else if (poolDensityCounter > updateLimit/2 && PS > 3) {
+    } else if (poolDensityCounter > 4*updateLimit/5 && PS >=10) {
       int numRemoveIndvs = std::min(PS-5, deltaPS/2);
       if (numRemoveIndvs > 0) {
         std::vector<int> worstIndvs = getWorstIndvs(pool, deltaPS/2);

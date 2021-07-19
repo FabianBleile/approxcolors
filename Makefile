@@ -76,7 +76,7 @@ export CXX=g++
 #
 # VALLGRIND MEMORY LEAK CHECK:
 #		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen10_10.col
-CFLAGS+= -DCOMPILE_FOR_VALGRIND
+# CFLAGS+= -DCOMPILE_FOR_VALGRIND
 CXXFLAGS += -g
 
 
@@ -128,7 +128,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/DSJR500.1c.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/le450_25d.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
 	./approxcolors test/dimacs/DSJC250.5.col
