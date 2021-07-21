@@ -9,8 +9,12 @@ extern "C" {
 #include <vector>
 #include <unordered_set>
 #include <sstream>
+#include <algorithm>
+#include <numeric>
+#include <utility>
+#include <random>
 
-using nodeid = uint32_t;
+using nodeid = int;
 
 class MMTGraph {
 public:
@@ -31,6 +35,8 @@ public:
 
   const std::vector<nodeid>* getNeighbors(const nodeid u) const ;
 
+  const std::vector<nodeid>* getClique() const ;
+
   int getDegree(const nodeid u) const ;
 
   void toString(int maxLines = 5, bool real = true) const ;
@@ -38,7 +44,11 @@ public:
 private:
   std::vector<std::vector<nodeid> > adjList;
 
+  std::vector<nodeid> clique;
+
   bool isValid(const nodeid u) const;
+
+  void cliqueTabuSearch(int L, int T);
 };
 
 #endif

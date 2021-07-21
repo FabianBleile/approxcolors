@@ -80,6 +80,8 @@ public:
 
   bool tabuSearch();
 
+  int getOptimalColor(nodeid u, std::vector<std::vector<int>>& tabuList, std::vector<nodeid>& cliquecoloring, int it);
+
   bool tabuSearchSimplified();
 
   bool priorityGreedy(const std::vector<int>& v);

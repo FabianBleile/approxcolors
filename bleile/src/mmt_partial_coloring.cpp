@@ -167,6 +167,7 @@ void PartialColoring::setColor(nodeid u, color c){
 }
 
 void PartialColoring::moveToColor(nodeid u, color c) {
+  assert(0 <= c && c <= k);
   const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   for (const auto &v : *u_neighbors) {
     if (colors[v] == c) setColor(v, k);
@@ -295,7 +296,7 @@ bool MMTPartialColoring::crossover(MMTPartialColoring& S1, MMTPartialColoring& S
       // insert returns <it to element, bool if was inserted>
       // if inserted update si_c and si_n
       if (this->colors[u] == this->k) {
-        this->colors[u] = cur_color;
+        setColor(u,cur_color);
         (*std::get<1>(A))[h]--;     // lower color class size of parent
         #pragma GCC diagnostic ignored "-Wunused-value"
         (*std::get<2>(A))--;           // lower total sum of nodes color in parent coloring but not in child coloring
@@ -318,11 +319,27 @@ bool MMTPartialColoring::crossover(MMTPartialColoring& S1, MMTPartialColoring& S
     cur_color++;
   }
 
+
+
+  for (size_t u = 0; u < graph->n; u++) {
+    if (colors[u] != k && std::find(std::begin(uncolored), std::end(uncolored), u) != std::end(uncolored)) {
+      std::cout << u  << ',' << colors[u]<< '\n';
+      for (auto w : uncolored) {
+        std::cout << w << ' ';
+      }
+      std::cout << '\n';
+      for (auto c : colors) {
+        std::cout << c << ' ';
+      }
+      std::cout << '\n';
+      assert(colors[u] == k);
+    }
+  }
+
   return evaluate() == 0;
 }
 
 std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialColoring*, std::vector<int>*, int* > MMTPartialColoring::selectParent(const MMTPartialColoring* s1, const MMTPartialColoring* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color){
-
   if ( ( *s1_n > 0 && *s2_n > 0 && !(cur_color % 2) ) || *s2_n == 0) {
     return std::make_tuple(s1, s1_c, s1_n, s2, s2_c, s2_n);
   } else {
@@ -350,6 +367,20 @@ bool MMTPartialColoring::tabuSearch(){
   // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
   std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
 
+  // the previously whilst initializing found clique is colored first
+  // in order to not remove those vertices during the tabuSearch we introduce the cliquecoloring std::vector
+  std::vector<nodeid> cliquecoloring(k, -1);
+
+  for (const auto u : *graph->getClique()) {
+    if (colors[u] == k) {
+      nodeid h = getOptimalColor(u, tabuList, cliquecoloring, 0);
+      // perform move (u,h)
+      moveToColor(u, h);
+    }
+    // update cliquecoloring information
+    cliquecoloring[colors[u]] = u;
+  }
+
   for (size_t it = 0; it < L; it++) {
     // solution discovered ? if yes break and return
     if (uncolored.empty()) break;
@@ -359,39 +390,36 @@ bool MMTPartialColoring::tabuSearch(){
 
     // init and populate cost vect, explore neighborhood for every color 0 to k-1
     // high enough constant to not use tabued moves
-    color h = -1;
-    int K = graph->n * graph->n;
-    std::vector<int> costs(k, 0);
-    for (const auto &v : *graph->getNeighbors(u)) {
-      if(colors[v] != k) {
-        costs[colors[v]] += graph->getDegree(v);
-      }
-    }
-    for (color c = 0; c < k; c++) {
-      if (costs[c] == 0) {
-        h = c;
-        goto color_found;
-      } else if (tabuList[u][c] >= it) {
-        costs[c] += K;
-      }
-    }
-    h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-
-  color_found:
+    nodeid h = getOptimalColor(u, tabuList, cliquecoloring, it);
     // perform move (u,h)
     moveToColor(u, h);
     // add move to TabuList
     tabuList[u][h] = it + T;
   }
 
-  // for (size_t i = 0; i < isChosen.size(); i++) {
-  //   if(isChosen[i] == false) {
-  //     std::cout << i << ' ';
-  //   }
-  // }
-  // std::cout << '\n';
-
   return evaluate() == 0;
+}
+
+int MMTPartialColoring::getOptimalColor(nodeid u, std::vector<std::vector<int>>& tabuList, std::vector<nodeid>& cliquecoloring, int it){
+  assert(colors[u] == k);
+  color h = -1;
+  int K = graph->n * graph->n;
+  std::vector<int> costs(k, 0);
+  for (const auto &v : *graph->getNeighbors(u)) {
+    if(colors[v] != k) {
+      costs[colors[v]] += graph->getDegree(v);
+    }
+  }
+  for (color c = 0; c < k; c++) {
+    if (graph->isAdj(u, cliquecoloring[c])) {
+      costs[c] = std::numeric_limits<int>::max();
+    } else if (costs[c] == 0) {
+      return c;
+    } else if (tabuList[u][c] > it) {
+      costs[c] += K;
+    }
+  }
+  return std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
 }
 
 // Mutation MMT

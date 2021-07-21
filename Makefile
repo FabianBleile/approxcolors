@@ -96,7 +96,7 @@ EXACTCOLOR_LIB= $(EXACTCOLOR_DIR)/libexactcolor.a
 CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Wshadow -W -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith -Wnested-externs -Wundef -Wcast-qual -Wcast-align -Wwrite-strings -I$(LPINCLUDE)
 export CFLAGS
 
-CXXFLAGS += -std=c++11 -O3 -I$(EXACTCOLOR_DIR)
+CXXFLAGS += -std=c++17 -O3 -I$(EXACTCOLOR_DIR)
 
 # UBSAN
 ifeq ($(USE_UBSAN), 1)
@@ -128,7 +128,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/le450_25d.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/R1000.5.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
 	./approxcolors test/dimacs/DSJC250.5.col
