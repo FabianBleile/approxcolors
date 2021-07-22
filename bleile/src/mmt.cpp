@@ -24,7 +24,8 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
        ss >> inst >> lb >> ub >> lazylb;
        if (this->graph.instance == inst) {
          // logger.UB = ub;
-         logger.LB = lb;
+         // logger.LB = lb;
+         logger.LB = lazylb;
          std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
          break;
        }
