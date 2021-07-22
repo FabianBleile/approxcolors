@@ -9,7 +9,7 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
    std::cout << "N = " << N << '\n';
 
    logger.UB = N+1;
-   R = N / 5 + 1; // pool spacing
+   R = N/5 + 1; // pool spacing
    updateLimit = 1000000 / N;
    deltaL = L * graph->dens;
    deltaPS = std::max((float) PS * graph->dens, (float) 1);
@@ -24,7 +24,8 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
        ss >> inst >> lb >> ub >> lazylb;
        if (this->graph.instance == inst) {
          // logger.UB = ub;
-         logger.LB = lb;
+         // logger.LB = lb;
+         logger.LB = lazylb;
          std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
          break;
        }
@@ -57,6 +58,9 @@ void MMT::PHASE0_EAInit(){
 }
 
 void MMT::PHASE1_EAOptimizer() {
+  // document results for clique effect
+  kLogData initKLogData = {logger.UB, 0, INIT_DSATUR};
+  logger.kLogData.push_back({logger.UB, 0, INIT_DSATUR});
   // pool : stores the current partial colorings
   //        init default pool with empty partial solutions
   std::vector<MMTPartialColoring> pool;
@@ -73,6 +77,9 @@ void MMT::PHASE1_EAOptimizer() {
     }
     logger.UB = cur_best_coloring.getNumColors();
     std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
+
+    // document results for clique effect
+    logger.kLogData.push_back({logger.UB, logger.lastItTimeInSec, logger.status});
   }
 }
 
@@ -134,7 +141,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
       if (nearIndvs.size() > 2) {
         poolDensityCounter++;
         // there is a near individual in the pool
-        if ((float) rand()/RAND_MAX < pGreedy) {
+        if ((float) rand()/RAND_MAX < PS/graph.n) {
           // drop offspring and generate new partial coloring with priorityGreedy()
           offspring = MMTPartialColoring(k, &graph, 5*L, T);
 
@@ -212,8 +219,7 @@ std::stringstream MMT::streamLogs(){
   logs << logger.status << ',';
   logs << logger.totTimeInSec << ',' << logger.lastItTimeInSec << ',';
   logs << logger.totNumOffsprings << ',' << logger.lastItNumOffsprings << ',';
-  logs << logger.UB << ',' << logger.LB << ',';
-  logs << logger.colOpt;
+  logs << logger.UB << ',' << logger.LB << '\n';
   return logs;
 }
 

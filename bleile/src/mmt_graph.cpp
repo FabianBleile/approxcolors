@@ -14,7 +14,7 @@ MMTGraph::MMTGraph(int argc, char **av) {
 
   initFromElist(n, m, elist);
 
-  // cliqueTabuSearch(10000, 500);
+  cliqueTabuSearch(10000, 500);
 
   delete elist;
 }
