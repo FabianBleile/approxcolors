@@ -141,9 +141,9 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
       if (nearIndvs.size() > 2) {
         poolDensityCounter++;
         // there is a near individual in the pool
-        if ((float) rand()/RAND_MAX < PS/graph.n) {
+        if ((float) rand()/RAND_MAX < pGreedy) {
           // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(k, &graph, 5*L, T);
+          offspring = MMTPartialColoring(k, &graph, 2*L, T);
 
           if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
             cur_best_coloring = offspring;
