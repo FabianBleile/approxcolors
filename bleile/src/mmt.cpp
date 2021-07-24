@@ -9,7 +9,7 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
    std::cout << "N = " << N << '\n';
 
    logger.UB = N+1;
-   R = N/5 + 1; // pool spacing
+   R = N/5; // pool spacing
    updateLimit = 1000000 / N;
    deltaL = L * graph->dens;
    deltaPS = std::max((float) PS * graph->dens, (float) 1);

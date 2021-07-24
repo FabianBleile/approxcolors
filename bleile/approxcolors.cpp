@@ -9,9 +9,38 @@ void documentation(std::string instance, MMT* mmt, int i, int imax){
   doc.close();
 }
 
+void cliqueAuswertung(MMTGraph& graph){
+  std::ifstream bounds_file("bleile/bounds.txt");
+  std::string s;
+  int LB;
+  while(getline(bounds_file, s)) {
+    std::stringstream ss(s);
+    std::string inst;
+    int lb, ub, lazylb;
+    ss >> inst >> lb >> ub >> lazylb;
+    if (graph.instance == inst) {
+      LB = lb;
+      break;
+    }
+  }
+  bounds_file.close();
+  char filename[ ] = "mmt_documentation.txt";
+  std::ofstream doc;
+  doc.open (filename, std::fstream::app);
+  doc << graph.instance << ' '
+            << graph.n << ' '
+            << (*graph.getClique()).size() << ' '
+            << (float) (*graph.getClique()).size()/graph.n << ' '
+            << (float) (*graph.getClique()).size()/LB
+            << '\n';
+  doc.close();
+}
+
 int main(int argc, char **av) {
 
   MMTGraph g(argc, av);
+
+  // cliqueAuswertung(g);
 
   std::vector<std::vector<MMT::kLogData> > v;
 
@@ -26,9 +55,7 @@ int main(int argc, char **av) {
   }
 
   for (auto i : v) {
-    for (auto j : i) {
-      std::cout << j.k << ',' << j.timeStampEnd << '\n';
-    }
+    std::cout << i[i.size()-1].k << ',' << i[i.size()-1].timeStampEnd << '\n';
   }
 
   return 0;
