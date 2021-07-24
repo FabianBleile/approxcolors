@@ -41,7 +41,9 @@ void MMTGraph::initFromElist(int ncount, int ecount, int *elist){
 }
 
 bool MMTGraph::isAdj(const nodeid u, const nodeid v) const {
-  assert(u != v && isValid(u) && isValid(v));
+  if (!isValid(u) || !isValid(v) || u == v) {
+    return false;
+  }
   return std::find(adjList[u].begin(),adjList[u].end(),v) != adjList[u].end();
 }
 

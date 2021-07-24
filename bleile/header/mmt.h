@@ -38,6 +38,23 @@ public:
     EA_TIME_OUT = 64
   };
 
+  struct kLogData {
+    int k;
+    int timeStampEnd;
+    status status;
+  };
+
+  struct LogData {
+    status status = UNSOLVED;
+    int totTimeInSec = 0;
+    int lastItTimeInSec = 0;
+    int totNumOffsprings = 0;
+    int lastItNumOffsprings = 0;
+    int UB;
+    int LB = 2;
+    std::vector<kLogData> kLogData;
+  };
+
   void start();
 
   void PHASE0_EAInit();
@@ -52,25 +69,14 @@ public:
 
   std::stringstream streamLogs();
 
-private:
+  LogData logger;
 
-  struct LogData {
-    status status = UNSOLVED;
-    int totTimeInSec = 0;
-    int lastItTimeInSec = 0;
-    int totNumOffsprings = 0;
-    int lastItNumOffsprings = 0;
-    int UB;
-    int LB = 2;
-    int colOpt = -1;
-  };
+private:
 
   int L, T, R, timeLimit, PS;
   int updateLimit, deltaL, deltaPS;
   const int N;
   MMTPartialColoring cur_best_coloring;
-
-  LogData logger;
 
   const int numColOpt = 1000;
   std::queue< std::unordered_set<nodeid> > columns;

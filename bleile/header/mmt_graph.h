@@ -9,8 +9,12 @@ extern "C" {
 #include <vector>
 #include <unordered_set>
 #include <sstream>
+#include <algorithm>
+#include <numeric>
+#include <utility>
+#include <random>
 
-using nodeid = uint32_t;
+using nodeid = int;
 
 class MMTGraph {
 public:

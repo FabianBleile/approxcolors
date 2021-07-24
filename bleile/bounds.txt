@@ -30,7 +30,7 @@ anna.col	11	12 11
 ash331GPIA.col	4	5 4
 ash608GPIA.col	4	5 4
 ash958GPIA.col	4	5 4
-C2000.5.col	99	161 158
+C2000.5.col	99	161 162
 C2000.9.col	400	419 409
 C4000.5.col 259 286 280
 david.col	11	12 11
@@ -42,13 +42,13 @@ DSJC250.5.col	28 29 28
 DSJC250.9.col	72	73 72
 DSJC500.1.col	12	13 12
 DSJC500.5.col	47	49 48
-DSJC500.9.col	126	129 127
+DSJC500.9.col	126	129 129
 DSJC1000.1.col	20	21 20
 DSJC1000.5.col	73	85 84
 DSJC1000.9.col	216	228 225
 DSJR500.1.col	12	13 12
 DSJR500.1c.col	85	87 85
-DSJR500.5.col	122	124 122
+DSJR500.5.col	122	124 123
 flat300_20_0.col	20	21 20
 flat300_26_0.col	26	27 26
 flat300_28_0.col	28	32 31
@@ -65,7 +65,7 @@ inithx.i.1.col	54	55 54
 inithx.i.2.col	31	32 31
 inithx.i.3.col	31	32 31
 jean.col	10	11 10
-latin_square_10.col	90	102 101
+latin_square_10.col	90	102 105
 le450_15a.col	15	16 15
 le450_15b.col	15	16 15
 le450_15c.col	15	16 15
@@ -116,7 +116,7 @@ r125.5.col	36	37 36
 r250.1.col	8	9 8
 r250.1c.col	64	65 64
 r250.5.col	65	66 65
-r1000.1.col	20	21 20
+R1000.1.col	20	21 20
 R1000.1c.col	98	101 98
 R1000.5.col	234	241 237
 school1.col	14	15 14
@@ -127,7 +127,7 @@ wap03a.col	40	49 47
 wap04a.col	40	47 45
 wap05a.col	50	51 50
 wap06a.col	40	42 40
-wap07a.col	40	44 41
+wap07a.col	40	44 42
 wap08a.col	40	44 42
 will199GPIA.col	7	8 7
 zeroin.i.1.col	49	50 49
