@@ -147,7 +147,7 @@ measure PartialColoring::evaluate() {
 
 void PartialColoring::setK(int k){
   if (k > this->k) {
-    std::cout << "Diese Funktionalität muss bei Bedarf noch implementiert werden" << '\n';
+    std::cout << "requesting to increase k - this functionality is not implemented yet" << '\n';
   } else if (k < this->k){
     this->k = k;
     uncolored.clear();

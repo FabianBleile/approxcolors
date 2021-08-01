@@ -65,6 +65,8 @@ void MMT::PHASE1_EAOptimizer() {
   //        init default pool with empty partial solutions
   std::vector<MMTPartialColoring> pool;
 
+  clock_t T = clock();
+
   while (logger.UB > logger.LB) {
     clock_t t = clock();
     MMT::status res = EADecision(logger.UB-1, pool);
@@ -79,7 +81,7 @@ void MMT::PHASE1_EAOptimizer() {
     std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
 
     // document results for pop effect
-    logger.kLogData.push_back({logger.UB, logger.lastItTimeInSec, logger.status});
+    logger.kLogData.push_back({logger.UB, (float) (clock() - T)/CLOCKS_PER_SEC, logger.status});
   }
 }
 
@@ -100,7 +102,11 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
     std::vector<MMTPartialColoring> new_pool;
     for (auto& indv : pool) {
       indv.setK(logger.UB-1);
-      indv.tabuSearch();
+      if(indv.tabuSearch()) {
+        cur_best_coloring = indv;
+        logger.lastItNumOffsprings = 0;
+        return EA;
+      }
       insertPool(indv, new_pool, priority);
     }
     pool = new_pool;
@@ -232,8 +238,7 @@ MMT::status MMT::initPool(int k, std::vector<MMTPartialColoring>& pool, std::vec
 
   // apply (different) initialization algorithms on the pool
   // DSATUR Block
-  int dsatur_block_size = PS;
-  for (size_t i = 0; i < dsatur_block_size; i++) {
+  for (size_t i = 0; i < PS; i++) {
     MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, this->L, this->T);
     if(dsatur.dsatur() || dsatur.tabuSearch()) {
       cur_best_coloring = dsatur;

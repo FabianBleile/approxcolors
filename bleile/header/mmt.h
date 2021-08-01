@@ -40,7 +40,7 @@ public:
 
   struct kLogData {
     int k;
-    int timeStampEnd;
+    float timeStampEnd;
     status status;
   };
 
