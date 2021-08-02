@@ -500,3 +500,7 @@ bool MMTPartialColoring::checkColoring(){
   std::cout << "CALCULATED COLORING IS LEGAL" << '\n';
   return true;
 }
+
+void MMTPartialColoring::setL(int _L){
+  L = _L;
+}

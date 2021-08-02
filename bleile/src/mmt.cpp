@@ -9,10 +9,9 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
    std::cout << "N = " << N << '\n';
 
    logger.UB = N+1;
-   R = N/5; // pool spacing
    updateLimit = 1000000 / N;
    deltaL = L * graph->dens;
-   deltaPS = std::max((float) PS * graph->dens, (float) 1);
+   deltaPS = 1;
 
    if (setBounds) {
      std::ifstream bounds_file("bleile/bounds.txt");
@@ -24,8 +23,8 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
        ss >> inst >> lb >> ub >> lazylb;
        if (this->graph.instance == inst) {
          // logger.UB = ub;
-         // logger.LB = lb;
-         logger.LB = lazylb;
+         logger.LB = lb;
+         // logger.LB = lazylb;
          std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
          break;
        }
@@ -91,7 +90,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
   //                   vertex is left uncolored in the current pool
   std::vector<int> priority(graph.n, PS);
 
-  pool.clear();
+  // pool.clear();
 
   if (pool.size() < PS) {
     MMT::status res = initPool(k, pool, priority);
@@ -116,12 +115,15 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
   size_t currentItNumOffsprings = 0;
 
   clock_t t = clock();
-  float pGreedy = updatePGreedy(pool, R);
+  R = setR(pool);
+  std::cout << "R = " << R << '\n';
+  float pGreedy = 0.1;
 
   while (((float) clock() - t)/CLOCKS_PER_SEC < timeLimit) {
     int poolDensityCounter = 0;
 
     for (size_t iter = 0; iter < updateLimit; iter++) {
+
       MMTPartialColoring offspring(k, &graph, L, T);
       std::vector<int> distOffspringToPool(PS, 0);
 
@@ -146,18 +148,23 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         }
       }
 
-      if (nearIndvs.size() > 2) {
+      if (nearIndvs.size() > 3) {
         poolDensityCounter++;
         // there is a near individual in the pool
         if ((float) rand()/RAND_MAX < pGreedy) {
+          int tempL = (float) poolDensityCounter > (float) 0.33*iter ?
+            (int) 10*((float) poolDensityCounter/(iter+1))*L : L;
+
           // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(k, &graph, 2*L, T);
+          offspring = MMTPartialColoring(k, &graph, tempL, T);
 
           if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
             cur_best_coloring = offspring;
             logger.lastItNumOffsprings = currentItNumOffsprings;
             return EA;
           }
+        } else if (poolDensityCounter > updateLimit/3) {
+          break;
         }
 
         int worstNearIndv = 0;
@@ -181,7 +188,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
     }
     std::cout << "updateLimit = " << updateLimit << " poolDensityCounter = " << poolDensityCounter << '\n';
     std::cout << "PS = " << PS << " N = " << N << '\n';
-    if (poolDensityCounter < updateLimit/5 && PS < N/20) {
+    if (poolDensityCounter <= updateLimit/100 && PS < N/20) {
       for (size_t i = 0; i < deltaPS; i++) {
         MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, L, T);
 
@@ -193,26 +200,17 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         insertPool(newIndv, pool, priority);
         PS++;
       }
-    } else if (poolDensityCounter > 4*updateLimit/5 && PS >=10) {
-      int numRemoveIndvs = std::min(PS-5, deltaPS/2);
-      if (numRemoveIndvs > 0) {
-        std::vector<int> worstIndvs = getWorstIndvs(pool, deltaPS/2);
-        std::sort(worstIndvs.begin(), worstIndvs.end());
-        for (size_t i = 0; i < worstIndvs.size(); i++) {
-          worstIndvs[i] -= i;
-        }
-        for (auto indx : worstIndvs) removePool(indx,pool,priority);
-
-        PS = pool.size();
-      }
+    } else if (poolDensityCounter > updateLimit/3) {
+      R *= 0.8;
     }
     if (L < 250*N) {
       L += deltaL;
+      updateLimit = updateLimit * 1.2;
     }
-    pGreedy = updatePGreedy(pool, R);
 
     std::cout << "L = " << L << "; "
-              << "PS = " << PS
+              << "PS = " << PS << "; "
+              << "R = " << R
               << '\n';
   }
   return EA_TIME_OUT;
@@ -276,19 +274,6 @@ void MMT::removePool(int indexRemoveIndv, std::vector<MMTPartialColoring>& pool,
   pool.erase(pool.begin() + indexRemoveIndv);
 }
 
-float MMT::updatePGreedy(std::vector<MMTPartialColoring>& pool, int R) {
-  int sum = 0, size = pool.size();
-  for (int i = 0; i < size; i++) {
-    for (int j = i + 1; j < size; j++) {
-      int dist;
-      dist = pool[i].distanceTo(&pool[j], false);
-      sum += dist;
-    }
-  }
-  float avg = sum / (size*(size+1)/2 - size);
-  return R/(3*avg);
-}
-
 std::vector<int> MMT::getWorstIndvs(std::vector<MMTPartialColoring>& pool, int returnSize){
   std::vector<int> sumDists(pool.size(),0);
   for (size_t i = 0; i < pool.size(); i++) {
@@ -306,6 +291,16 @@ std::vector<int> MMT::getWorstIndvs(std::vector<MMTPartialColoring>& pool, int r
     if (sumDists[i] <= kth_element)
       res.push_back(i);
   return res;
+}
+
+int MMT::setR(std::vector<MMTPartialColoring>& pool){
+  int sum = 0;
+  for (int i = 0; i < PS; i++) {
+    for (int j = i; j < PS; j++) {
+      sum += pool[i].distanceTo(&pool[j],true);
+    }
+  }
+  return sum / (PS*(PS+1));
 }
 
 void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded){
@@ -343,3 +338,20 @@ int COLORbleile(int ncount, int ecount, int *elist) {
   std::cout << "hello from c++" << '\n';
   return 0;
 }
+
+
+/*
+
+int numRemoveIndvs = std::min(PS-5, deltaPS/2);
+if (numRemoveIndvs > 0) {
+  std::vector<int> worstIndvs = getWorstIndvs(pool, deltaPS/2);
+  std::sort(worstIndvs.begin(), worstIndvs.end());
+  for (size_t i = 0; i < worstIndvs.size(); i++) {
+    worstIndvs[i] -= i;
+  }
+  for (auto indx : worstIndvs) removePool(indx,pool,priority);
+
+  PS = pool.size();
+}
+
+*/

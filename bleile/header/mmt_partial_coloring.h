@@ -92,6 +92,8 @@ public:
 
   int getFitness();
 
+  void setL(int _L);
+
   std::vector<std::unordered_set<nodeid> > color_classes;
 
 private:

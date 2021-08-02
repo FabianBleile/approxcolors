@@ -74,7 +74,7 @@ public:
 private:
 
   int L, T, R, timeLimit, PS;
-  int updateLimit, deltaL, deltaPS;
+  int updateLimit, deltaL, deltaPS, deltaR;
   const int N;
   MMTPartialColoring cur_best_coloring;
 
@@ -92,6 +92,8 @@ private:
   float updatePGreedy(std::vector<MMTPartialColoring>& pool, int R);
 
   std::vector<int> getWorstIndvs(std::vector<MMTPartialColoring>& pool, int returnSize);
+
+  int setR(std::vector<MMTPartialColoring>& pool);
 
   void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false);
 
