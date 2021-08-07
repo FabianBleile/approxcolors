@@ -23,7 +23,7 @@ MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
        ss >> inst >> lb >> ub >> lazylb;
        if (this->graph.instance == inst) {
          // logger.UB = ub;
-         // logger.LB = lb;
+         logger.LB = lb;
          // logger.LB = lazylb;
          std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
          break;
@@ -198,7 +198,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
     std::cout << "PS = " << PS << " N = " << N << '\n';
     if (poolDensityCounter <= updateLimit/100 && PS < N/20) {
       for (size_t i = 0; i < deltaPS; i++) {
-        MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, 50*L, T);
+        MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, L, T);
 
         if(newIndv.priorityGreedy(priority) || newIndv.tabuSearch()) {
           cur_best_coloring = newIndv;
@@ -209,7 +209,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         PS++;
       }
     } else if (poolDensityCounter > updateLimit/3) {
-      R *= 0.8;
+      R *= 0.9;
     }
     if (L < 250*N) {
       L += deltaL;

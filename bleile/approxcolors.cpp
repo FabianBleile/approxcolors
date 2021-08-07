@@ -16,8 +16,8 @@ int main(int argc, char **av) {
   std::vector<std::vector<MMT::kLogData> > v;
   std::vector<int> v_totTime;
 
-  for (size_t i = 0; i < 4; i++) {
-    MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 300, /*pool size*/ 10, false); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  for (size_t i = 0; i < 10; i++) {
+    MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 60, /*pool size*/ 10, true); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
 
     mmt.start();
 

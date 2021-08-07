@@ -30,7 +30,7 @@ anna.col	11	12 11
 ash331GPIA.col	4	5 4
 ash608GPIA.col	4	5 4
 ash958GPIA.col	4	5 4
-C2000.5.col	99	161 145
+C2000.5.col	99	153 145
 C2000.9.col	400	419 400
 C4000.5.col 259 356 259
 david.col	11	12 11
