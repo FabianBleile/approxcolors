@@ -153,10 +153,18 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         }
       }
 
-      if (!closeIndvs.empty() || nearIndvs.size() > 5) {
+      if (!closeIndvs.empty() || nearIndvs.size() > 3) {
         poolDensityCounter++;
       }
-      if ((float) rand()/RAND_MAX < pGreedy && (!closeIndvs.empty() || nearIndvs.size() > 3)) {
+      if ((float) rand()/RAND_MAX < pGreedy && !closeIndvs.empty())) {
+        int worstIndv = 0;
+        for (size_t i = 1; i < closeIndvs.size(); i++) {
+          if (pool[closeIndvs[i]].evaluate() > pool[worstIndv].evaluate()) {
+            worstIndv = closeIndvs[i];
+          }
+        }
+        updatePool(offspring, &pool[worstIndv], pool, priority);
+      } else if((float) rand()/RAND_MAX < pGreedy && nearIndvs.size() > 3) {
         // there is a near individual in the pool
         int tempL = (float) poolDensityCounter > (float) 0.25*iter ?
           (int) 10*((float) poolDensityCounter/(iter+1))*L : L;
@@ -164,7 +172,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         // drop offspring and generate new partial coloring with priorityGreedy()
         offspring = MMTPartialColoring(k, &graph, tempL, T);
 
-        int res = (float) rand()/RAND_MAX < 0.5 ? offspring.priorityGreedy(priority) : offspring.dsatur();
+        int res = (float) rand()/RAND_MAX < 0.3 ? offspring.priorityGreedy(priority) : offspring.greedy();
 
         if(res || offspring.tabuSearch()) {
           cur_best_coloring = offspring;
@@ -180,7 +188,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
           }
         }
         updatePool(offspring, &pool[worstIndv], pool, priority);
-      } else if (poolDensityCounter > updateLimit/3) {
+      } if (poolDensityCounter > updateLimit/3) {
         break;
       } else {
         // delete worst parent and insert child to pool
@@ -209,7 +217,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         PS++;
       }
     } else if (poolDensityCounter > updateLimit/3) {
-      R *= 0.9;
+      R *= 0.8;
     }
     if (L < 250*N) {
       L += deltaL;
