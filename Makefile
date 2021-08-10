@@ -130,7 +130,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors test/dimacs/DSJC1000.5.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
+	./approxcolors test/dimacs/DSJC125.5.col
 
 testdummy:
 	./approxcolors test/dimacs/DSJC250.5.col

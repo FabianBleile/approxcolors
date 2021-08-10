@@ -128,7 +128,7 @@ wap04a.col	40	47 42
 wap05a.col	50	51 50
 wap06a.col	40	42 40
 wap07a.col	40	44 41
-wap08a.col	40	44 42
+wap08a.col	40	44 41
 will199GPIA.col	7	8 7
 zeroin.i.1.col	49	50 49
 zeroin.i.2.col	30	31 30
