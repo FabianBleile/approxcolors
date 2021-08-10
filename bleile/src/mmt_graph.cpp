@@ -10,7 +10,9 @@ MMTGraph::MMTGraph(int argc, char **av) {
   }
 
   int *elist;
-  read_graph(argc, av, &n, &m, &elist);
+  // read_graph(argc, av, &n, &m, &elist);
+  if(!writeToElist(file, &n, &m, &elist))
+    std::cout << "Fehler beim Einlesen der Instanz." << '\n';
 
   initFromElist(n, m, elist);
 
@@ -79,4 +81,54 @@ void MMTGraph::toString(int maxLines, bool real) const
 
 bool MMTGraph::isValid(const nodeid u) const {
     return u >= 0 && u < n;
+}
+
+bool MMTGraph::writeToElist(char *f, int *pncount, int *pecount, int **pelist) {
+
+    std::ifstream graph_file(f);
+
+    std::vector<std::vector<bool> > adjMat;
+
+    std::string line;
+    size_t it = 0;
+    for (size_t it = 0; getline(graph_file, line);) {
+      std::istringstream iss(line);
+      char ch;
+      if (iss >> ch)
+      {
+          size_t from, to;
+          std::string format;
+
+          switch(ch) {
+              case 'c':
+                break;
+              case 'p':
+                  if ((*pncount)||(*pecount)) return false;
+                  iss >> format >> (*pncount) >> (*pecount);
+                  *pelist = new int[2*(*pecount)];
+                  adjMat = std::vector<std::vector<bool> >((*pncount),std::vector<bool>((*pncount),false));
+                  break;
+              case 'e':
+                  if (iss >> from >> to){
+                    if (from < 0 || from > (*pncount) || to < 0 || to > (*pncount) ) {
+                      break;
+                    }
+                    if (adjMat[from-1][to-1]) {
+                      break;
+                    } else {
+                      adjMat[from-1][to-1] = true;
+                      adjMat[to-1][from-1] = true;
+                      (*pelist)[it++] = from-1;
+                      (*pelist)[it++] = to-1;
+                    }
+                  }
+                  break;
+              default:
+                  return false;
+          }
+      }
+    }
+
+    graph_file.close();
+    return true;
 }

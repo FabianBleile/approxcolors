@@ -77,7 +77,7 @@ export CXX=g++
 # VALLGRIND MEMORY LEAK CHECK:
 #		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen10_10.col
 # CFLAGS+= -DCOMPILE_FOR_VALGRIND
-CXXFLAGS += -g
+# CXXFLAGS += -g
 
 
 BLEILE_DIR=bleile
@@ -98,13 +98,15 @@ export CFLAGS
 
 CXXFLAGS += -std=c++17 -O3 -I$(EXACTCOLOR_DIR)
 
+CXXFLAGSLIGHT += -std=c++17 -pedantic -Wall -Wshadow -W -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith -Wnested-externs -Wundef -Wcast-qual -Wcast-align -Wwrite-strings -I$(LPINCLUDE)
+
 # UBSAN
 ifeq ($(USE_UBSAN), 1)
 	CFLAGS += -fsanitize=undefined -fsanitize=float-divide-by-zero
 endif
 
 
-OBJFILES=color.o color_backup.o color_parms.o graph.o greedy.o $(LPSOURCE) mwis.o $(GRBMWIS) mwis_grdy.o plotting.o heap.o util.o cliq_enum.o bbsafe.o rounding_mode.o
+OBJFILES=color.o color_backup.o color_parms.o graph.o greedy.o $(LPSOURCE) mwis.o $(GRBMWIS) mwis_grdy.o plotting.o heap.o util.o cliq_enum.o bbsafe.o rounding_mode.o mmt_connector.o c_connector.o mmt.o mmt_graph.o
 STABFILES=stable.o graph.o greedy.o util.o $(LPSOURCE) cliq_enum.o
 STABGRDYFILES=stable_grdy.o graph.o greedy.o util.o $(LPSOURCE) cliq_enum.o mwis.o mwis_grdy.o  heap.o $(SEWELL_LIB)
 BOSSFILES=graph.o bbsafe.o util.o rounding_mode.o
@@ -128,7 +130,11 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
+<<<<<<< HEAD
 	./approxcolors test/dimacs/DSJC1000.5.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
+=======
+	./approxcolors test/dimacs/DSJC125.5.col
+>>>>>>> parentSpacing
 
 testdummy:
 	./approxcolors test/dimacs/DSJC250.5.col
@@ -153,7 +159,7 @@ libexactcolor.a: $(OBJFILES)
 	$(AR) rcs libexactcolor.a $(OBJFILES)
 
 color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker
-	$(LD)  $(CFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+	$(CXX)  $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
 color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES)
 	$(CC) $(CFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
@@ -179,8 +185,8 @@ complement: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(COMPFILES)
 dsatur: dsatur.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
 	$(LD) $(CFLAGS) -o dsatur dsatur.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
-approxcolors: approxcolors.o mmt.o mmt_read.o mmt_graph.o mmt_partial_coloring.o hungarian.o graph.o color.o rounding_mode.o lpqsopt.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
-	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o mmt.o mmt_read.o mmt_graph.o mmt_partial_coloring.o hungarian.o graph.o color.o color_parms.o rounding_mode.o lpqsopt.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+approxcolors: approxcolors.o mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
+	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
 
 queen: queen.c
 	$(CC) $(CFLAGS) -o queen queen.c -lm -lpthread
@@ -210,7 +216,7 @@ SRCFILES=bbsafe.c color_backup.c  color.h color_parms.c  graph.c   heap.c     lp
 color_version.h: $(SRCFILES)
 	./create_version_header > color_version.h
 
-color.o:     color_main.c color.c color.h color_private.h lp.h color_defs.h mwis.h plotting.h heap.h bbsafe.h color_version.h
+color.o:     color_main.c color.c color.h color_private.h lp.h color_defs.h mwis.h plotting.h heap.h bbsafe.h color_version.h bleile/header/c_connector.h
 color_worker.o: color_worker.c color_private.h color_defs.h bbsafe.h
 color_backup.o: color_backup.c color_private.h color_defs.h
 color_parms.o: color_parms.c color_parms.h color_defs.h
@@ -225,16 +231,17 @@ lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
 approxcolors.o:		 $(BLEILE_DIR)/approxcolors.cpp $(BLEILE_HEADER)/mmt.h
 	$(CXX) $(CXXFLAGS) -c -o approxcolors.o $(BLEILE_DIR)/approxcolors.cpp
+c_connector.o: $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h $(BLEILE_HEADER)/mmt.h
+	$(CXX) $(CXXFLAGS) -c -o c_connector.o $(BLEILE_SRC)/c_connector.cpp
+mmt_connector.o: mmt_connector.c mmt_connector.h $(BLEILE_HEADER)/c_connector.h
 mmt.o:			 $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h lp.h
 	$(CXX) $(CXXFLAGS) -c -o mmt.o $(BLEILE_SRC)/mmt.cpp
-mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_UTILS)/mmt_read.h
+mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h
 	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o $(BLEILE_SRC)/mmt_graph.cpp
 mmt_partial_coloring.o: $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.h
 	$(CXX) $(CXXFLAGS) -c -o mmt_partial_coloring.o $(BLEILE_SRC)/mmt_partial_coloring.cpp
 hungarian.o: $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
 	$(CXX) $(CXXFLAGS) -c -o hungarian.o $(BLEILE_UTILS)/hungarian.cpp
-mmt_read.o:	 $(BLEILE_UTILS)/mmt_read.c graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
-	$(LD) $(CFLAGS) -c -o mmt_read.o $(BLEILE_UTILS)/mmt_read.c graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 mwis.o:      mwis.c mwis.h color.h color_defs.h
 mwis_grdy.o: mwis_grdy.c color.h graph.h color_defs.h heap.h
 mwis_grb.o:  mwis_grb.c color.h lp.h color_defs.h
