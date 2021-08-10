@@ -144,7 +144,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
       std::vector<int> closeIndvs;
       std::vector<int> nearIndvs;
       for (size_t i = 0; i < PS; i++) {
-        int tempDist = offspring.distanceTo(&pool[i], false);
+        int tempDist = offspring.distanceTo(&pool[i], true);
         if (tempDist <= R) {
           nearIndvs.push_back(i);
           if (tempDist <= R/10) {
@@ -156,7 +156,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
       if (!closeIndvs.empty() || nearIndvs.size() > 3) {
         poolDensityCounter++;
       }
-      if ((float) rand()/RAND_MAX < pGreedy && !closeIndvs.empty())) {
+      if ((float) rand()/RAND_MAX < pGreedy && !closeIndvs.empty()) {
         int worstIndv = 0;
         for (size_t i = 1; i < closeIndvs.size(); i++) {
           if (pool[closeIndvs[i]].evaluate() > pool[worstIndv].evaluate()) {
