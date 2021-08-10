@@ -17,7 +17,7 @@ int main(int argc, char **av) {
   std::vector<int> v_totTime;
 
   for (size_t i = 0; i < 1; i++) {
-    MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 28000, /*pool size*/ 10, true); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+    MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 20000, /*pool size*/ 10, true); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
 
     mmt.start();
 

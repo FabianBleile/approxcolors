@@ -1,11 +1,6 @@
 #ifndef MMT_H_
 #define MMT_H_
 
-extern "C" {
-  #include "lp.h"
-  #include "color_defs.h"
-}
-
 #include "mmt_graph.h"
 #include "mmt_partial_coloring.h"
 #include "bleile/utils/pair_hasher.hpp"

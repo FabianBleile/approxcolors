@@ -117,7 +117,7 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
   clock_t t = clock();
   R = N/10; // setR(pool);
   std::cout << "R = " << R << '\n';
-  float pGreedy = 0.1;
+  float pGreedy = 0.5;
 
   while (((float) clock() - t)/CLOCKS_PER_SEC < timeLimit) {
     int poolDensityCounter = 0;
@@ -141,62 +141,48 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
         return EA;
       }
 
-      std::vector<int> closeIndvs;
-      std::vector<int> nearIndvs;
-      for (size_t i = 0; i < PS; i++) {
-        int tempDist = offspring.distanceTo(&pool[i], false);
-        if (tempDist <= R) {
-          nearIndvs.push_back(i);
-          if (tempDist <= R/10) {
-            closeIndvs.push_back(i);
-          }
-        }
-      }
+      int dist1 = offspring.distanceTo(&pool[parent_1], true);
+      int dist2 = offspring.distanceTo(&pool[parent_2], true);
 
-      if (!closeIndvs.empty() || nearIndvs.size() > 3) {
+      if (dist1 < R && dist2 < R) {
         poolDensityCounter++;
-      }
-      if ((float) rand()/RAND_MAX < pGreedy && !closeIndvs.empty())) {
-        int worstIndv = 0;
-        for (size_t i = 1; i < closeIndvs.size(); i++) {
-          if (pool[closeIndvs[i]].evaluate() > pool[worstIndv].evaluate()) {
-            worstIndv = closeIndvs[i];
+        if ((float) rand()/RAND_MAX < pGreedy) {
+          // there is a near individual in the pool
+          int tempL = (float) poolDensityCounter > (float) 0.25*iter ?
+            (int) 10*((float) poolDensityCounter/(iter+1))*L : L;
+
+          // drop offspring and generate new partial coloring with priorityGreedy()
+          offspring = MMTPartialColoring(k, &graph, tempL, T);
+
+          int res = (float) rand()/RAND_MAX < 0.3 ? offspring.priorityGreedy(priority) : (float) rand()/RAND_MAX < 0.3 ? offspring.greedy() : offspring.dsatur();
+
+          if(res || offspring.tabuSearch()) {
+            cur_best_coloring = offspring;
+            logger.lastItNumOffsprings = currentItNumOffsprings;
+            return EA;
           }
         }
-        updatePool(offspring, &pool[worstIndv], pool, priority);
-      } else if((float) rand()/RAND_MAX < pGreedy && nearIndvs.size() > 3) {
-        // there is a near individual in the pool
-        int tempL = (float) poolDensityCounter > (float) 0.25*iter ?
-          (int) 10*((float) poolDensityCounter/(iter+1))*L : L;
-
-        // drop offspring and generate new partial coloring with priorityGreedy()
-        offspring = MMTPartialColoring(k, &graph, tempL, T);
-
-        int res = (float) rand()/RAND_MAX < 0.3 ? offspring.priorityGreedy(priority) : offspring.greedy();
-
-        if(res || offspring.tabuSearch()) {
-          cur_best_coloring = offspring;
-          logger.lastItNumOffsprings = currentItNumOffsprings;
-          return EA;
-        }
-
-        int worstIndv = 0;
-        auto tempIndv = closeIndvs.empty() ? nearIndvs : closeIndvs;
-        for (size_t i = 1; i < tempIndv.size(); i++) {
-          if (pool[tempIndv[i]].evaluate() > pool[worstIndv].evaluate()) {
-            worstIndv = tempIndv[i];
-          }
-        }
-        updatePool(offspring, &pool[worstIndv], pool, priority);
-      } if (poolDensityCounter > updateLimit/3) {
-        break;
-      } else {
-        // delete worst parent and insert child to pool
-        if (pool[parent_1].evaluate() <= pool[parent_2].evaluate()) {
-          updatePool(offspring, &pool[parent_2], pool, priority);
-        } else {
+      } else if (dist1 < R/10) {
+        if (offspring.evaluate() < pool[parent_1].evaluate()) {
           updatePool(offspring, &pool[parent_1], pool, priority);
         }
+        continue;
+      } else if (dist2 < R/10) {
+        if (offspring.evaluate() < pool[parent_2].evaluate()) {
+          updatePool(offspring, &pool[parent_2], pool, priority);
+        }
+        continue;
+      }
+
+      if (poolDensityCounter > updateLimit/3) {
+        break;
+      }
+
+      // delete worst parent and insert child to pool
+      if (pool[parent_1].evaluate() <= pool[parent_2].evaluate()) {
+        updatePool(offspring, &pool[parent_2], pool, priority);
+      } else {
+        updatePool(offspring, &pool[parent_1], pool, priority);
       }
 
       logger.totNumOffsprings++;
@@ -349,24 +335,3 @@ void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
   }
   std::cout << "|\tbest = " << best << "; average = " << sum / pool.size() << '\n';
 }
-
-int COLORbleile(int ncount, int ecount, int *elist) {
-  std::cout << "hello from c++" << '\n';
-  return 0;
-}
-
-
-/*
-
-if (PS > 3) {
-  std::vector<int> worstIndvs = getWorstIndvs(pool, 1);
-  std::sort(worstIndvs.begin(), worstIndvs.end());
-  for (size_t i = 0; i < worstIndvs.size(); i++) {
-    worstIndvs[i] -= i;
-  }
-  for (auto indx : worstIndvs) removePool(indx,pool,priority);
-
-  PS = pool.size();
-}
-
-*/

@@ -1,11 +1,8 @@
 #ifndef MMT_GRAPH_H_
 #define MMT_GRAPH_H_
 
-extern "C" {
-  #include "bleile/utils/mmt_read.h"
-}
-
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <unordered_set>
 #include <sstream>
@@ -18,7 +15,7 @@ using nodeid = int;
 
 class MMTGraph {
 public:
-  int n, m;
+  int n = 0, m = 0;
   float dens;
 
   std::string instance;
@@ -28,6 +25,8 @@ public:
   MMTGraph(int ncount, int ecount, int *elist) ;
 
   MMTGraph(MMTGraph * input) ;
+
+  bool writeToElist(char *f, int *pncount, int *pecount, int **pelist);
 
   void initFromElist(int ncount, int ecount, int *elist);
 
