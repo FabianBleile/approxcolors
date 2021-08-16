@@ -13,18 +13,18 @@
 
 using nodeid = int;
 
-class MMTGraph {
+class Graph {
 public:
   int n = 0, m = 0;
   float dens;
 
   std::string instance;
 
-  MMTGraph(int argc, char **av) ;
+  Graph(int argc, char **av) ;
 
-  MMTGraph(int ncount, int ecount, int *elist) ;
+  Graph(int ncount, int ecount, int *elist) ;
 
-  MMTGraph(MMTGraph * input) ;
+  Graph(Graph * input) ;
 
   bool writeToElist(char *f, int *pncount, int *pecount, int **pelist);
 
@@ -41,7 +41,7 @@ public:
 private:
   std::vector<std::vector<nodeid> > adjList;
 
-  bool isValid(const nodeid u) const;
+  bool isValidNode(const nodeid u) const;
 };
 
 #endif

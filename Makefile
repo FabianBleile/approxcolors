@@ -124,20 +124,16 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	scan-build -v -o clang make -j
 
 testall:
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), echo $(file);)
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), ./approxcolors $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), echo $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), ./approxcolors $(file);)
 
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-<<<<<<< HEAD
-	./approxcolors test/dimacs/DSJC1000.5.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
-=======
-	./approxcolors test/dimacs/DSJC125.5.col
->>>>>>> parentSpacing
+	./approxcolors test/dimacs/flat1000_76_0.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
 
 testdummy:
-	./approxcolors test/dimacs/DSJC250.5.col
+	./approxcolors test/dimacs/DSJC500.5.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con

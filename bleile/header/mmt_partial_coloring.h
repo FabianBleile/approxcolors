@@ -22,13 +22,12 @@ extern "C" {
 #include <stdexcept>
 
 using color = uint32_t;
-using measure = int;
 
-class PartialColoring {
+class PartialCol {
 public:
-  PartialColoring(const int k, MMTGraph * graph);
+  PartialCol(const int k, Graph * graph);
 
-  MMTGraph * graph;
+  Graph * graph;
   int k;
   std::vector<color> colors;
   std::unordered_set<nodeid> uncolored;
@@ -39,23 +38,21 @@ public:
 
   bool dsatur();
 
-  int distanceTo(PartialColoring* S, bool exact = false) ;
+  int distanceTo(PartialCol* S, bool exact = false) ;
 
-  measure evaluate() ;
-
-  void setK(int k);
+  int evaluate() ;
 
   void setColor(nodeid u, color c) ;
 
   void moveToColor(nodeid u, color c) ;
 
-  int findMinAvailableColor(nodeid u);
+  int getMinAvailableColor(nodeid u);
 
   int getNumColors() const ;
 
   void toString(int maxLines = 14) const ;
 
-  bool operator < (const PartialColoring& S) const ;
+  bool operator < (const PartialCol& S) const ;
 
 private:
   int dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const ;
@@ -69,41 +66,37 @@ private:
 };
 
 
-class MMTPartialColoring : public PartialColoring {
+class EvolPartialCol : public PartialCol {
 public:
   // empty constructor
-  MMTPartialColoring(const int k, MMTGraph * graph, int L, int T);
+  EvolPartialCol(const int k, Graph * graph);
 
   // TODO : constructor from superclass
 
-  bool crossover(MMTPartialColoring& S1, MMTPartialColoring& S2);
+  bool crossover(EvolPartialCol& S1, EvolPartialCol& S2);
 
-  bool tabuSearch();
+  bool tabuSearch(int L, int T);
+
+  void setK(int k);
 
   int getOptimalColor(nodeid u, std::vector<std::vector<int>>& tabuList, int it);
 
-  bool tabuSearchSimplified();
-
   bool priorityGreedy(const std::vector<int>& v);
 
-  void lockColoring() ;
+  void buildColorClasses() ;
 
   bool checkColoring() ;
 
   int getFitness();
 
-  void setL(int _L);
-
   std::vector<std::unordered_set<nodeid> > color_classes;
 
 private:
 
-  int L, T;
-
-  std::tuple<const MMTPartialColoring*,std::vector<int>*, int*,
-        const MMTPartialColoring*,std::vector<int>*, int* >
-                                  selectParent(const MMTPartialColoring* s1,
-                                                const MMTPartialColoring* s2,
+  std::tuple<const EvolPartialCol*,std::vector<int>*, int*,
+        const EvolPartialCol*,std::vector<int>*, int* >
+                                  selectParent(const EvolPartialCol* s1,
+                                                const EvolPartialCol* s2,
                                                 std::vector<int>* s1_c,
                                                 std::vector<int>* s2_c,
                                                 int* s1_n, int* s2_n, int cur_color

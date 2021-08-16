@@ -5,14 +5,14 @@
     *******************************************************
     *******************************************************
 
-                    PartialColoring
+                    PartialCol
 
     *******************************************************
     *******************************************************
 
 */
 
-PartialColoring::PartialColoring(const int k, MMTGraph * graph) : k(k), graph(graph), colors(graph->n) {
+PartialCol::PartialCol(const int k, Graph * graph) : k(k), graph(graph), colors(graph->n) {
   assert(k!=0);
   assert(graph != NULL);
 
@@ -23,44 +23,53 @@ PartialColoring::PartialColoring(const int k, MMTGraph * graph) : k(k), graph(gr
   for (const auto &u : v) setColor(u, k);
 }
 
-int PartialColoring::distanceTo(PartialColoring* S, bool exact) {
+/*
+    Calculate the distance between two PartialCols.
+    Either exact or lose
+*/
+int PartialCol::distanceTo(PartialCol* S, bool exact) {
   assert(k == S->k);
 
   // populate intersection matrix
-  std::vector<std::vector<double> > matIntersec(k+1,std::vector<double>(k+1,graph->n));
+  std::vector<std::vector<double> > mat_intersec(k+1,std::vector<double>(k+1,graph->n));
   int num_uncolored = 0;
   for (size_t i = 0; i < colors.size(); i++) {
-    matIntersec[colors[i]][S->colors[i]]--;
+    mat_intersec[colors[i]][S->colors[i]]--;
     if (S->colors[i] == k) num_uncolored++;
   }
-  num_uncolored += k*graph->n - std::accumulate(matIntersec[k].begin(), matIntersec[k].end()-1, 0);
+  num_uncolored += k*graph->n - std::accumulate(mat_intersec[k].begin(), mat_intersec[k].end()-1, 0);
   // remove uncolored nodes from distance calculation
-  matIntersec.pop_back();
-  for (auto& vIntersec : matIntersec) {
+  mat_intersec.pop_back();
+  for (auto& vIntersec : mat_intersec) {
     vIntersec.pop_back();
   }
 
-  return exact ? exactDistance(matIntersec, num_uncolored) : approxDistance(matIntersec, num_uncolored);
+  return exact ? exactDistance(mat_intersec, num_uncolored) : approxDistance(mat_intersec, num_uncolored);
 }
 
-// clear (k+1)-st bucket in a greedy way
-bool PartialColoring::greedy(const vector<nodeid>& v) {
+/*
+    SEQ : Try to assign a color to all uncolored vertices
+    Either by given order or random order
+*/
+bool PartialCol::greedy(const vector<nodeid>& v) {
   // SEQ
   if (v.empty()) {
     std::vector<nodeid> temp(uncolored.begin(), uncolored.end());
     // obtain a time-based seed:
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(temp.begin(), temp.end(), std::default_random_engine(seed));
-    for (const auto &u : temp) setColor(u, findMinAvailableColor(u));
+    for (const auto &u : temp) setColor(u, getMinAvailableColor(u));
   } else if (v.size() == graph->n) {
-    for (const auto &u : v) setColor(u, findMinAvailableColor(u));
+    for (const auto &u : v) setColor(u, getMinAvailableColor(u));
   }
 
   return evaluate() == 0;
 }
 
-// clear (k+1)-st bucket in a dsatur way
-bool PartialColoring::dsatur(){
+/*
+    DSatur : Try to assign a color to all uncolored vertices
+*/
+bool PartialCol::dsatur(){
   // shuffle uncolored nodes
   std::vector<nodeid> v(uncolored.begin(), uncolored.end());
   // obtain a time-based seed:
@@ -77,7 +86,7 @@ bool PartialColoring::dsatur(){
     // compute random node with max degree in G from all nodes with max saturation
     nodeid u = dsatur_selectMaxNode(v, satdegree, freedegree);
     // color max_node with the lowest available color
-    setColor(u, findMinAvailableColor(u));
+    setColor(u, getMinAvailableColor(u));
     // update degrees in G and C
     dsatur_updateDeg(u, satdegree, freedegree);
 
@@ -85,7 +94,10 @@ bool PartialColoring::dsatur(){
   return evaluate() == 0;
 }
 
-int PartialColoring::dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const {
+/*
+    Return Node with max saturation degree for DSatur
+*/
+int PartialCol::dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_nodes, std::vector<int>& satdegree, std::vector<int>& freedegree) const {
   int maxsatdegree_node = 0;
   for (auto i : shuffled_nodes) {
     if( (satdegree[i] > satdegree[maxsatdegree_node]) ||
@@ -100,7 +112,10 @@ int PartialColoring::dsatur_selectMaxNode(const std::vector<nodeid>& shuffled_no
   return maxsatdegree_node;
 }
 
-void PartialColoring::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::vector<int>& freedegree){
+/*
+    Update saturation and free degrees for DSatur
+*/
+void PartialCol::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::vector<int>& freedegree){
   // set satdegree of chosen node to -1 in order to not select again
   satdegree[u] = -1;
   // get neighbors of u and update sat and freedegree of neighbors
@@ -124,7 +139,10 @@ void PartialColoring::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, st
   }
 }
 
-int PartialColoring::findMinAvailableColor(nodeid u) {
+/*
+    Given Node u; return minimum color with no conflicting nodes
+*/
+int PartialCol::getMinAvailableColor(nodeid u) {
   const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   std::vector<bool> colorIsAvailable(k+1,true);
   for (const auto &v : *u_neighbors) {
@@ -134,8 +152,11 @@ int PartialColoring::findMinAvailableColor(nodeid u) {
   return k;
 }
 
-measure PartialColoring::evaluate() {
-  measure cost = 0;
+/*
+    Evaluate Partial Coloring by the sum over the degrees of uncolored vertices
+*/
+int PartialCol::evaluate() {
+  int cost = 0;
   for (const auto & u : uncolored) {
     int deg = graph->getDegree(u);
     cost += deg < k ? 0 : deg;
@@ -145,28 +166,66 @@ measure PartialColoring::evaluate() {
   // return uncolored.size();
 }
 
-void PartialColoring::setK(int k){
-  if (k > this->k) {
+/*
+    Migrate PratialCol from k color classes to k_new classes
+*/
+/*
+void EvolPartialCol::setK(int k_new){
+  if (k_new > this->k) {
     std::cout << "requesting to increase k - this functionality is not implemented yet" << '\n';
-  } else if (k < this->k){
-    this->k = k;
+  } else if (k_new < this->k){
+    this->k = k_new;
     uncolored.clear();
     for (size_t i = 0; i < colors.size(); i++) {
-      if (colors[i] >= k) {
-        setColor(i, k);
+      if (colors[i] >= k_new) {
+        setColor(i, k_new);
       }
     }
   }
 }
+*/
 
-// requires move to not result in any conflicts
-void PartialColoring::setColor(nodeid u, color c){
+
+void EvolPartialCol::setK(int k_new){
+  if (k_new > this->k) {
+    std::cout << "requesting to increase k - this functionality is not implemented yet" << '\n';
+  } else if (k_new < this->k){
+    buildColorClasses();
+    std::vector<int> cc_cost(k, 0);
+    for (size_t u = 0; u < colors.size(); u++) {
+      if (colors[u] < k) {
+        cc_cost[colors[u]] += graph->getDegree(u);
+      }
+    }
+    this->k = k_new;
+    for (size_t u = 0; u < colors.size(); u++) {
+      setColor(u, k_new);
+    }
+    for (size_t i = 0; i < k_new; i++) {
+      color best_color = std::distance(cc_cost.begin(), std::max_element(cc_cost.begin(), cc_cost.end()));
+      for (auto u : this->color_classes[best_color]) {
+        setColor(u, i);
+      }
+      cc_cost[best_color] = 0;
+    }
+  }
+}
+
+/*
+    Set color of given node u to c
+    Attention: there is no checking for conflicts at this point
+    Require: move u to color c is not raising conflicts
+*/
+void PartialCol::setColor(nodeid u, color c){
   if(c == k) uncolored.insert(u);
   else uncolored.erase(u);
   colors[u] = c;
 }
 
-void PartialColoring::moveToColor(nodeid u, color c) {
+/*
+    Set color of given node u to c while moving conflicting nodes to uncolored
+*/
+void PartialCol::moveToColor(nodeid u, color c) {
   assert(0 <= c && c <= k);
   const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   for (const auto &v : *u_neighbors) {
@@ -175,18 +234,28 @@ void PartialColoring::moveToColor(nodeid u, color c) {
   setColor(u,c);
 }
 
-int PartialColoring::getNumColors() const {
-  color maxcolor = 0;
+/*
+    count used colors
+*/
+int PartialCol::getNumColors() const {
+  int numColors = 0;
+  std::vector<bool> colorUsed(k, false);
   for (size_t i = 0; i < colors.size(); i++) {
-    if (colors[i] > maxcolor) {
-      maxcolor = colors[i];
+    if (colors[i] < k && !colorUsed[colors[i]]) {
+      colorUsed[colors[i]] = true;
+      numColors++;
     }
   }
-  return maxcolor + 1;
+  return numColors;
 }
 
-void PartialColoring::toString(int maxLines) const {
-  std::cout << "MMTPartialColoring.toString() of " << this << '\n';
+/*
+    Outout Coloring
+    - ordered by color clases
+    - sorted by numerical
+*/
+void PartialCol::toString(int maxLines) const {
+  std::cout << "EvolPartialCol.toString() of " << this << '\n';
 
   if (this->uncolored.empty()) {
     std::cout << "successfully colored with " << getNumColors() << " colors." << '\n';
@@ -204,30 +273,33 @@ void PartialColoring::toString(int maxLines) const {
   }
 }
 
-// distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
-int PartialColoring::approxDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
+/*
+    distance implementation proposed by D.C. Porumbel, J.-K. Hao, and P. Kuntz
+*/
+int PartialCol::approxDistance(std::vector<std::vector<double> >& mat_intersec, int num_uncolored){
   int max_cost = 0;
-  for (auto& intersec : matIntersec) {
+  for (auto& intersec : mat_intersec) {
     max_cost += (int) *std::min_element(intersec.begin(), intersec.end());
   }
   return std::max(0, graph->n - num_uncolored - (k*graph->n - max_cost));
 }
 
-int PartialColoring::exactDistance(std::vector<std::vector<double> >& matIntersec, int num_uncolored){
+/*
+    HungarianAlgorithm to calculate set-theoretic partition distance
+*/
+int PartialCol::exactDistance(std::vector<std::vector<double> >& mat_intersec, int num_uncolored){
   HungarianAlgorithm HungAlgo;
 	vector<int> assignment;
 
-	double r = HungAlgo.Solve(matIntersec, assignment);
-
-  // for (size_t i = 0; i < assignment.size(); i++) {
-  //   std::cout << assignment[i] << ',' << graph->n - matIntersec[i][assignment[i]] << '\t';
-  // }
-  // std::cout << '\n';
+	double r = HungAlgo.Solve(mat_intersec, assignment);
 
 	return graph->n - num_uncolored - (k*graph->n - r);
 }
 
-bool PartialColoring::operator<(const PartialColoring& S) const
+/*
+    compare fitness of two PartialCols
+*/
+bool PartialCol::operator<(const PartialCol& S) const
 {
   return (this->fitness < S.fitness);
 }
@@ -240,7 +312,7 @@ bool PartialColoring::operator<(const PartialColoring& S) const
     *******************************************************
     *******************************************************
 
-                    MMTPartialColoring
+                    EvolPartialCol
 
     *******************************************************
     *******************************************************
@@ -250,18 +322,23 @@ bool PartialColoring::operator<(const PartialColoring& S) const
 
 
 
-// empty constructor
-MMTPartialColoring::MMTPartialColoring(const int k, MMTGraph * graph, int L, int T) : PartialColoring(k, graph), L(L), T(T) {
+/*
+    Empty constructor taking k, graph and tabuSearch parameters L,T
+*/
+EvolPartialCol::EvolPartialCol(const int k, Graph * graph) : PartialCol(k, graph) {
   // everything handled by the super constructor
 }
 
-bool MMTPartialColoring::crossover(MMTPartialColoring& S1, MMTPartialColoring& S2){
+/*
+    GPX crossover between two PartialCols
+*/
+bool EvolPartialCol::crossover(EvolPartialCol& S1, EvolPartialCol& S2){
   assert(color_classes.size() == 0);
   assert(this->k == S1.k && this->k == S2.k);
   assert(this->graph == S1.graph && this->graph == S2.graph);
 
-  S1.lockColoring();
-  S2.lockColoring();
+  S1.buildColorClasses();
+  S2.buildColorClasses();
 
   // generate vectors with size of each color class for both parents
   std::vector<int> s1_c(k), s2_c(k);
@@ -319,27 +396,13 @@ bool MMTPartialColoring::crossover(MMTPartialColoring& S1, MMTPartialColoring& S
     cur_color++;
   }
 
-
-
-  for (size_t u = 0; u < graph->n; u++) {
-    if (colors[u] != k && std::find(std::begin(uncolored), std::end(uncolored), u) != std::end(uncolored)) {
-      std::cout << u  << ',' << colors[u]<< '\n';
-      for (auto w : uncolored) {
-        std::cout << w << ' ';
-      }
-      std::cout << '\n';
-      for (auto c : colors) {
-        std::cout << c << ' ';
-      }
-      std::cout << '\n';
-      assert(colors[u] == k);
-    }
-  }
-
   return evaluate() == 0;
 }
 
-std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialColoring*, std::vector<int>*, int* > MMTPartialColoring::selectParent(const MMTPartialColoring* s1, const MMTPartialColoring* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color){
+/*
+    GPX crossover: select parent two get color class from
+*/
+std::tuple<const EvolPartialCol*, std::vector<int>*, int*, const EvolPartialCol*, std::vector<int>*, int* > EvolPartialCol::selectParent(const EvolPartialCol* s1, const EvolPartialCol* s2, std::vector<int>* s1_c, std::vector<int>* s2_c, int* s1_n, int* s2_n, int cur_color){
   if ( ( *s1_n > 0 && *s2_n > 0 && !(cur_color % 2) ) || *s2_n == 0) {
     return std::make_tuple(s1, s1_c, s1_n, s2, s2_c, s2_n);
   } else {
@@ -347,17 +410,10 @@ std::tuple<const MMTPartialColoring*, std::vector<int>*, int*, const MMTPartialC
   }
 }
 
-// Mutation
-// set a pair (node, color) tabu for T steps
-bool MMTPartialColoring::tabuSearch(){
-
-  /*
-    Laufzeitüberlegung aktuell:
-      - zufälligen Knoten wählen O(n)
-      - costVect aufbauen für init O(k), populate O(delta), calculate h 2*O(k)
-      - Fall Schritt tabu: O(delta)
-    => O(n + delta + 3*k)
-  */
+/*
+    Tabu Search performed for L iterations with a tenure of T
+*/
+bool EvolPartialCol::tabuSearch(int L, int T){
 
   assert(L>0 && T>0);
   if (color_classes.size() != 0) {
@@ -380,81 +436,37 @@ bool MMTPartialColoring::tabuSearch(){
     // perform move (u,h)
     moveToColor(u, h);
     // add move to TabuList
-    tabuList[u][h] = it + T;
+    tabuList[u][h] = it + T + (int) rand() % 10;
   }
 
   return evaluate() == 0;
 }
 
-int MMTPartialColoring::getOptimalColor(nodeid u, std::vector<std::vector<int>>& tabuList, int it){
+/*
+    Return best color concerning tabu-list and fitness
+*/
+int EvolPartialCol::getOptimalColor(nodeid u, std::vector<std::vector<int>>& tabuList, int it){
   assert(colors[u] == k);
   color h = -1;
   int K = graph->n * graph->n;
-  std::vector<int> costs(k, 0);
+  std::vector<int> costs(k, -graph->getDegree(u));
   for (const auto &v : *graph->getNeighbors(u)) {
     if(colors[v] != k) {
       costs[colors[v]] += graph->getDegree(v);
     }
   }
   for (color c = 0; c < k; c++) {
-    if (costs[c] == 0) {
-      return c;
-    } else if (tabuList[u][c] > it) {
+    if (tabuList[u][c] > it) {
       costs[c] += K;
     }
   }
   return std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
 }
 
-// Mutation MMT
-// set a single node tabu for T steps independant of the color.
-// minimize over |delta(V_{k+1})|
-bool MMTPartialColoring::tabuSearchSimplified(){
-  assert(L>0 && T>0);
-  assert(color_classes.size() == 0);
-
-  // tabuList to store moves performed in recent history (iteration when move is valid again is stored)
-  std::vector<std::vector<int>> tabuList(graph->n, std::vector<int>(k, 0));
-
-  for (size_t it = 0; it < L; it++) {
-    // solution discovered ? if yes break and return
-    if (uncolored.empty()) break;
-    // choose u from random vect
-    auto random_it = std::next(std::begin(uncolored), (int) rand() % uncolored.size());
-    nodeid u = *random_it;
-
-    // init and populate cost vect, explore neighborhood for every color 0 to k-1
-    // high enough constant to not use tabued moves
-    color h = -1;
-    int K = graph->n * graph->n;
-    std::vector<int> costs(k, 0);
-    for (const auto &v : *graph->getNeighbors(u)) {
-      if(colors[v] != k) {
-        costs[colors[v]]++;
-      }
-    }
-    for (color c = 0; c < k; c++) {
-      if (costs[c] == 0) {
-        h = c;
-        goto color_found;
-      } else if (tabuList[u][c] >= it) {
-        costs[c] += K;
-      }
-    }
-    h = std::distance(costs.begin(), std::min_element(costs.begin(), costs.end()));
-
-  color_found:
-    // perform move (u,h)
-    moveToColor(u, h);
-    // add move to TabuList
-    tabuList[u][h] = it + T;
-  }
-
-  return greedy();
-}
-
-// clear (k+1)-st bucket in a greedy way
-bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
+/*
+    Priority Greedy : Given priority oerder; color nodes in a greedy way
+*/
+bool EvolPartialCol::priorityGreedy(const std::vector<int>& priority_v) {
   assert(color_classes.size() == 0);
   assert(priority_v.size() == graph->n);
   // generate ascending seq of nodes
@@ -467,17 +479,21 @@ bool MMTPartialColoring::priorityGreedy(const std::vector<int>& priority_v) {
 
   // copy priority vector and add little noise
   for (size_t i = 0; i < nodes_v.size() - 1; i++) {
-    if ((float) rand()/RAND_MAX < 0.5) {
+    if ((float) rand()/RAND_MAX < 0.1) {
       std::swap(nodes_v.at(i), nodes_v.at(i+1));
     }
   }
 
-  for (const auto &u : nodes_v) setColor(u, findMinAvailableColor(u));
+  for (const auto &u : nodes_v) setColor(u, getMinAvailableColor(u));
 
   return evaluate() == 0;
 }
 
-void MMTPartialColoring::lockColoring(){
+/*
+    populate color classes. coloring is stored in color vector
+    transition that to color clases
+*/
+void EvolPartialCol::buildColorClasses(){
   if (color_classes.size() != 0) return;
   color_classes = std::vector<std::unordered_set<nodeid> >(k, std::unordered_set<nodeid>());
   for (size_t i = 0; i < colors.size(); i++) {
@@ -485,8 +501,11 @@ void MMTPartialColoring::lockColoring(){
   }
 }
 
-bool MMTPartialColoring::checkColoring(){
-  lockColoring();
+/*
+    check for conflicts in coloring
+*/
+bool EvolPartialCol::checkColoring(){
+  buildColorClasses();
   for (auto cclass : color_classes) {
     for (auto u : cclass) {
       for (auto w : cclass) {
@@ -497,10 +516,6 @@ bool MMTPartialColoring::checkColoring(){
       }
     }
   }
-  std::cout << "CALCULATED COLORING IS LEGAL" << '\n';
+  std::cout << "coloring has no conflicts" << '\n';
   return true;
-}
-
-void MMTPartialColoring::setL(int _L){
-  L = _L;
 }

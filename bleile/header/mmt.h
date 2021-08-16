@@ -19,9 +19,7 @@
 class MMT {
 public:
 
-  MMTGraph graph;
-
-  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, bool setBounds = false);
+  Graph graph;
 
   enum status {
     UNSOLVED = 1,
@@ -50,17 +48,17 @@ public:
     std::vector<kLogData> kLogData;
   };
 
+  MMT(Graph * graph, int L, int T, int time_limit_sec, int pool_size = 10, bool set_bounds = false);
+
   void start();
 
-  void PHASE0_EAInit();
+  void evolInit();
 
-  void PHASE1_EAOptimizer();
+  void evolOptimize();
 
-  status EADecision(int k, std::vector<MMTPartialColoring>& pool);
+  status evolDecision(int k, std::vector<EvolPartialCol>& pool);
 
-  void PHASE2_ColumnOptimization();
-
-  MMTPartialColoring* getColoring();
+  EvolPartialCol* getColoring();
 
   std::stringstream streamLogs();
 
@@ -69,33 +67,27 @@ public:
 private:
 
   int L, T, R, timeLimit, PS;
-  int updateLimit, deltaL, deltaPS, deltaR;
+  int update_limit, delta_L, delta_PS, delta_R;
   const int N;
-  MMTPartialColoring cur_best_coloring;
+  EvolPartialCol best_col;
 
-  const int numColOpt = 1000;
   std::queue< std::unordered_set<nodeid> > columns;
 
-  status initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  status initPool(int k, std::vector<EvolPartialCol>& pool, std::vector<int>& priority, bool diversify);
 
-  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  void insertPool(EvolPartialCol& new_individual, std::vector<EvolPartialCol>& pool, std::vector<int>& priority);
 
-  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual,std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  void updatePool(EvolPartialCol& new_individual, EvolPartialCol* old_individual,std::vector<EvolPartialCol>& pool, std::vector<int>& priority);
 
-  void removePool(int indexRemoveIndv, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority);
+  void removePool(int indexRemoveIndv, std::vector<EvolPartialCol>& pool, std::vector<int>& priority);
 
-  float updatePGreedy(std::vector<MMTPartialColoring>& pool, int R);
+  std::vector<int> getWorstIndvs(std::vector<EvolPartialCol>& pool, int returnSize);
 
-  std::vector<int> getWorstIndvs(std::vector<MMTPartialColoring>& pool, int returnSize);
+  void adoptBounds();
 
-  int setR(std::vector<MMTPartialColoring>& pool);
+  void printPoolDistance(std::vector<EvolPartialCol>& pool, bool expanded = false);
 
-  void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false);
-
-  void printPoolFitness(std::vector<MMTPartialColoring>& pool);
-
-  // stable sets of each newly best partial coloring is added to columns
-  void addStableSets(MMTPartialColoring* new_best);
+  void printPoolFitness(std::vector<EvolPartialCol>& pool);
 };
 
 #endif

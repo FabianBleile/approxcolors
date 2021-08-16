@@ -1,16 +1,17 @@
 #include "bleile/header/mmt_graph.h"
 
-MMTGraph::MMTGraph(int argc, char **av) {
+Graph::Graph(int argc, char **av) {
   // save graph instance
   char * file = av[1];
   std::stringstream filestream;
   filestream << file;
+
   while(std::getline(filestream, instance, '/')){
    // loop for last segment delimited by '/' there instance name sits
   }
 
   int *elist;
-  // read_graph(argc, av, &n, &m, &elist);
+
   if(!writeToElist(file, &n, &m, &elist))
     std::cout << "Fehler beim Einlesen der Instanz." << '\n';
 
@@ -19,11 +20,11 @@ MMTGraph::MMTGraph(int argc, char **av) {
   delete elist;
 }
 
-MMTGraph::MMTGraph(int ncount, int ecount, int *elist) {
+Graph::Graph(int ncount, int ecount, int *elist) {
   initFromElist(ncount, ecount, elist);
 }
 
-MMTGraph::MMTGraph(MMTGraph * input) {
+Graph::Graph(Graph * input) {
   n = input->n;
   m = input->m;
   dens = input->dens;
@@ -31,7 +32,7 @@ MMTGraph::MMTGraph(MMTGraph * input) {
   adjList = input->adjList;
 }
 
-void MMTGraph::initFromElist(int ncount, int ecount, int *elist){
+void Graph::initFromElist(int ncount, int ecount, int *elist){
   adjList = std::vector<std::vector<nodeid> >(n,std::vector<nodeid>());
 
   for (size_t i = 0; i < m; i++) {
@@ -42,26 +43,26 @@ void MMTGraph::initFromElist(int ncount, int ecount, int *elist){
   dens = (float) m/(n*(n+1)/2);
 }
 
-bool MMTGraph::isAdj(const nodeid u, const nodeid v) const {
-  if (!isValid(u) || !isValid(v) || u == v) {
+bool Graph::isAdj(const nodeid u, const nodeid v) const {
+  if (!isValidNode(u) || !isValidNode(v) || u == v) {
     return false;
   }
   return std::find(adjList[u].begin(),adjList[u].end(),v) != adjList[u].end();
 }
 
-const std::vector<nodeid>* MMTGraph::getNeighbors(const nodeid u) const {
-  assert(isValid(u));
+const std::vector<nodeid>* Graph::getNeighbors(const nodeid u) const {
+  assert(isValidNode(u));
   return &adjList[u];
 }
 
-int MMTGraph::getDegree(const nodeid u) const {
-  assert(isValid(u));
+int Graph::getDegree(const nodeid u) const {
+  assert(isValidNode(u));
   return adjList[u].size();
 }
 
-void MMTGraph::toString(int maxLines, bool real) const
+void Graph::toString(int maxLines, bool real) const
 {
-  std::cout << "MMTGraph.toString() of " << this << '\n';
+  std::cout << "Graph.toString() of " << this << '\n';
   assert(n != 0 && m != 0);
   std::cout << "n = " << n << " : m = " << m << '\n';
   for (auto u = 0; u < n; u++) {
@@ -79,11 +80,11 @@ void MMTGraph::toString(int maxLines, bool real) const
   }
 }
 
-bool MMTGraph::isValid(const nodeid u) const {
+bool Graph::isValidNode(const nodeid u) const {
     return u >= 0 && u < n;
 }
 
-bool MMTGraph::writeToElist(char *f, int *pncount, int *pecount, int **pelist) {
+bool Graph::writeToElist(char *f, int *pncount, int *pecount, int **pelist) {
 
     std::ifstream graph_file(f);
 

@@ -183,7 +183,7 @@
 ==3409==    by 0x10052E2A7: ctime (in /usr/lib/system/libsystem_c.dylib)
 ==3409==    by 0x10002C033: COLORprogram_header (in ./approxcolors)
 ==3409==    by 0x10000946E: read_graph (in ./approxcolors)
-==3409==    by 0x100009EA4: MMTGraph::MMTGraph(int, char**) (mmt_graph.cpp:13)
+==3409==    by 0x100009EA4: Graph::Graph(int, char**) (mmt_graph.cpp:13)
 ==3409==    by 0x100001290: main (approxcolors.cpp:14)
 ==3409== 
 ==3409== 72 bytes in 1 blocks are still reachable in loss record 36 of 61
@@ -226,7 +226,7 @@
 ==3409==    by 0x10052E2A7: ctime (in /usr/lib/system/libsystem_c.dylib)
 ==3409==    by 0x10002C033: COLORprogram_header (in ./approxcolors)
 ==3409==    by 0x10000946E: read_graph (in ./approxcolors)
-==3409==    by 0x100009EA4: MMTGraph::MMTGraph(int, char**) (mmt_graph.cpp:13)
+==3409==    by 0x100009EA4: Graph::Graph(int, char**) (mmt_graph.cpp:13)
 ==3409== 
 ==3409== 2,320 bytes in 1 blocks are definitely lost in loss record 59 of 61
 ==3409==    at 0x1001D3545: malloc (in /usr/local/Cellar/valgrind/HEAD-eec4cf7/libexec/valgrind/vgpreload_memcheck-amd64-darwin.so)
@@ -234,7 +234,7 @@
 ==3409==    by 0x100013069: COLORadjgraph_extract_edgelist (in ./approxcolors)
 ==3409==    by 0x100014211: COLORread_dimacs (in ./approxcolors)
 ==3409==    by 0x100009ADD: read_graph (in ./approxcolors)
-==3409==    by 0x100009EA4: MMTGraph::MMTGraph(int, char**) (mmt_graph.cpp:13)
+==3409==    by 0x100009EA4: Graph::Graph(int, char**) (mmt_graph.cpp:13)
 ==3409==    by 0x100001290: main (approxcolors.cpp:14)
 ==3409== 
 ==3409== 4,096 bytes in 1 blocks are still reachable in loss record 60 of 61
@@ -245,7 +245,7 @@
 ==3409==    by 0x10051B6B9: puts (in /usr/lib/system/libsystem_c.dylib)
 ==3409==    by 0x10002BFBC: COLORprogram_header (in ./approxcolors)
 ==3409==    by 0x10000946E: read_graph (in ./approxcolors)
-==3409==    by 0x100009EA4: MMTGraph::MMTGraph(int, char**) (mmt_graph.cpp:13)
+==3409==    by 0x100009EA4: Graph::Graph(int, char**) (mmt_graph.cpp:13)
 ==3409==    by 0x100001290: main (approxcolors.cpp:14)
 ==3409== 
 ==3409== 18,280 bytes in 1 blocks are still reachable in loss record 61 of 61
@@ -255,7 +255,7 @@
 ==3409==    by 0x10052E2A7: ctime (in /usr/lib/system/libsystem_c.dylib)
 ==3409==    by 0x10002C033: COLORprogram_header (in ./approxcolors)
 ==3409==    by 0x10000946E: read_graph (in ./approxcolors)
-==3409==    by 0x100009EA4: MMTGraph::MMTGraph(int, char**) (mmt_graph.cpp:13)
+==3409==    by 0x100009EA4: Graph::Graph(int, char**) (mmt_graph.cpp:13)
 ==3409==    by 0x100001290: main (approxcolors.cpp:14)
 ==3409== 
 ==3409== LEAK SUMMARY:

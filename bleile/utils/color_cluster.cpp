@@ -7,11 +7,11 @@
 #include "bleile/utils/hungarian.h"
 #include "bleile/header/mmt_partial_coloring.h"
 
-class PartialColoringCluster {
+class PartialColCluster {
 public:
-  MMTGraph * graph;
+  Graph * graph;
 
-  PartialColoringCluster(const char * filename, MMTGraph * g) {
+  PartialColCluster(const char * filename, Graph * g) {
     graph = g;
 
     // Read from the text file
@@ -44,7 +44,7 @@ public:
           while (ss >> strnode) {
             coloring.push_back(stoi(strnode));
           }
-          PartialColoring tempCol(k, graph);
+          PartialCol tempCol(k, graph);
           tempCol.greedy(coloring);
           centers.push_back(tempCol);
           break;
@@ -66,12 +66,12 @@ public:
     }
   }
 
-  PartialColoringCluster(int num_center, int n, int k, MMTGraph * g) : num_center(num_center), n(n), k(k) {
+  PartialColCluster(int num_center, int n, int k, Graph * g) : num_center(num_center), n(n), k(k) {
     graph = g;
 
     // init centers
     for (size_t i = 0; i < num_center; i++) {
-      PartialColoring col(k, graph);
+      PartialCol col(k, graph);
       col.greedy();
       centers.push_back(col);
 
@@ -102,7 +102,7 @@ public:
     clock_t t = clock();
     for (size_t it = 0; ((float) clock() - t)/CLOCKS_PER_SEC < timeLimit && sumRatio != 0 ; it++) {
       it %= ratioLimit;
-      PartialColoring col(k, graph);
+      PartialCol col(k, graph);
       col.greedy();
       bool setToNewCenter = feed(col);
       sumRatio += setToNewCenter - ratio[it];
@@ -118,13 +118,13 @@ public:
   void initTesting(int timeLimit){
     clock_t t = clock();
     for (size_t it = 0; ((float) clock() - t)/CLOCKS_PER_SEC < timeLimit; it++) {
-      PartialColoring col(k, graph);
+      PartialCol col(k, graph);
       col.greedy();
       test(col, true);
     }
   }
 
-  bool feed(PartialColoring& input){
+  bool feed(PartialCol& input){
     int nearest_center_dist;
     int next_center_dist;
     int nearest_center = getNearestCenter(input, nearest_center_dist, next_center_dist);
@@ -136,7 +136,7 @@ public:
     return false;
   }
 
-  void test(PartialColoring& input, bool start) {
+  void test(PartialCol& input, bool start) {
     int nearest_center_dist;
     int next_center_dist;
     int nearest_center = getNearestCenter(input, nearest_center_dist, next_center_dist, true);
@@ -240,11 +240,11 @@ private:
   };
 
   int num_center, n;
-  std::vector<PartialColoring> centers;
+  std::vector<PartialCol> centers;
   std::vector<float> next_center_dists;
   LogData logger;
 
-  int getNearestCenter(PartialColoring& input, int& nearest_center_dist, int& next_center_dist, bool update = false){
+  int getNearestCenter(PartialCol& input, int& nearest_center_dist, int& next_center_dist, bool update = false){
     // int min_approx_dist = n;
     int nearest_approx_dist = n;
     nearest_center_dist = n;
@@ -268,7 +268,7 @@ private:
     return *std::next(std::begin(nearest_center), (int) rand() % nearest_center.size());
   }
 
-  void replaceNode(PartialColoring& new_center, int old_center){
+  void replaceNode(PartialCol& new_center, int old_center){
     logger.center_updated++;
     centers[old_center] = new_center;
     return;

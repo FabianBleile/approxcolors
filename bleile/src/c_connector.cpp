@@ -9,9 +9,9 @@ extern "C" {
 
 
 int MMTbleile(int ncount, int ecount, int *elist) {
-  MMTGraph g(ncount, ecount, elist);
+  Graph g(ncount, ecount, elist);
 
-  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 28000, /*pool size*/ 10, true); // MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 28000, /*pool size*/ 10, true); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
 
   mmt.start();
 

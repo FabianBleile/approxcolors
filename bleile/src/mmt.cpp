@@ -1,82 +1,66 @@
 #include "bleile/header/mmt.h"
 
-MMT::MMT(MMTGraph * graph, int L, int T, int timeLimit, int PS, bool setBounds)
+MMT::MMT(Graph * graph, int L, int T, int timeLimit, int PS, bool set_bounds)
  : graph(graph), L(L), T(T), timeLimit(timeLimit), PS(PS),
- cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), N(graph->n)
+ best_col(EvolPartialCol(graph->n, graph)), N(graph->n)
 
  {
    assert(PS >= 3);
    std::cout << "N = " << N << '\n';
 
    logger.UB = N+1;
-   updateLimit = 1000000 / N;
-   deltaL = L * graph->dens;
-   deltaPS = 1;
+   update_limit = 1000000 / N;
+   delta_L = L * graph->dens;
+   delta_PS = 1;
 
-   if (setBounds) {
-     std::ifstream bounds_file("bleile/bounds.txt");
-     std::string s;
-     while(getline(bounds_file, s)) {
-       std::stringstream ss(s);
-       std::string inst;
-       int lb, ub, lazylb;
-       ss >> inst >> lb >> ub >> lazylb;
-       if (this->graph.instance == inst) {
-         // logger.UB = ub;
-         logger.LB = lb;
-         // logger.LB = lazylb;
-         std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
-         break;
-       }
-     }
-     bounds_file.close();
-   }
+   if (set_bounds) adoptBounds();
 }
 
 void MMT::start(){
   clock_t t = clock();
-  PHASE0_EAInit();
-  PHASE1_EAOptimizer();
+  evolInit();
+  evolOptimize();
   if(logger.UB != logger.LB) {
     // PHASE2_ColumnOptimization();
   }
-  if (cur_best_coloring.checkColoring()) {
-    cur_best_coloring.toString();
+  if (best_col.checkColoring()) {
+    best_col.toString();
   }
 
   logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
 }
 
-void MMT::PHASE0_EAInit(){
-  MMTPartialColoring init = MMTPartialColoring(logger.UB, &graph, L, T);
-  if (init.dsatur() || init.tabuSearch()) {
-    cur_best_coloring = init;
+void MMT::evolInit(){
+  EvolPartialCol init = EvolPartialCol(logger.UB, &graph);
+  if (init.dsatur() || init.tabuSearch(L, T)) {
+    best_col = init;
     logger.UB = init.getNumColors();
   };
   std::cout << "Init UB to " << logger.UB << "\n";
 }
 
-void MMT::PHASE1_EAOptimizer() {
+void MMT::evolOptimize() {
   // document results for pop effect
   kLogData initKLogData = {logger.UB, 0, INIT_DSATUR};
   logger.kLogData.push_back({logger.UB, 0, INIT_DSATUR});
   // pool : stores the current partial colorings
   //        init default pool with empty partial solutions
-  std::vector<MMTPartialColoring> pool;
+  std::vector<EvolPartialCol> pool;
 
   clock_t T = clock();
 
   while (logger.UB > logger.LB) {
     clock_t t = clock();
-    MMT::status res = EADecision(logger.UB-1, pool);
+    MMT::status res = evolDecision(logger.UB-1, pool);
     switch (res) {
       case EA_TIME_OUT:
         return;
       default:
         logger.status = res;
         logger.lastItTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
+        std::cout << "time : " << (float) (clock() - T)/CLOCKS_PER_SEC << '\n';
     }
-    logger.UB = cur_best_coloring.getNumColors();
+    logger.UB = best_col.getNumColors();
     std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
 
     // document results for pop effect
@@ -84,25 +68,27 @@ void MMT::PHASE1_EAOptimizer() {
   }
 }
 
-MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
+MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool) {
 
   // priority vector : for every vertex keeps track of the total number this
   //                   vertex is left uncolored in the current pool
   std::vector<int> priority(graph.n, PS);
 
-  // pool.clear();
-
   if (pool.size() < PS) {
-    MMT::status res = initPool(k, pool, priority);
+    MMT::status res = initPool(k, pool, priority, false);
+    if (res != UNSOLVED) {
+      return res;
+    }
+    res = initPool(k, pool, priority, true);
     if (res != UNSOLVED) {
       return res;
     }
   } else {
-    std::vector<MMTPartialColoring> new_pool;
+    std::vector<EvolPartialCol> new_pool;
     for (auto& indv : pool) {
-      indv.setK(logger.UB-1);
-      if(indv.tabuSearch()) {
-        cur_best_coloring = indv;
+      indv.setK(k);
+      if(indv.tabuSearch(L, T)) {
+        best_col = indv;
         logger.lastItNumOffsprings = 0;
         return EA;
       }
@@ -115,16 +101,17 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
   size_t currentItNumOffsprings = 0;
 
   clock_t t = clock();
-  R = N/10; // setR(pool);
+  R = N/10;
+  int delta_R = R/5;
   std::cout << "R = " << R << '\n';
-  float pGreedy = 0.5;
+  float pGreedy = 0.1;
 
   while (((float) clock() - t)/CLOCKS_PER_SEC < timeLimit) {
     int poolDensityCounter = 0;
 
-    for (size_t iter = 0; iter < updateLimit; iter++) {
+    for (size_t iter = 0; iter < update_limit; iter++) {
 
-      MMTPartialColoring offspring(k, &graph, L, T);
+      EvolPartialCol offspring(k, &graph);
       std::vector<int> distOffspringToPool(PS, 0);
 
       int parent_1 = (int) rand() % PS;
@@ -134,109 +121,113 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
       }
 
       // generate offspring and if it is not already a solution improve by calling tabuSearch on it
-      offspring = MMTPartialColoring(k, &graph, L, T);
-      if(offspring.crossover(pool[parent_1], pool[parent_2]) || offspring.tabuSearch()) {
-        cur_best_coloring = offspring;
+      offspring = EvolPartialCol(k, &graph);
+      if(offspring.crossover(pool[parent_1], pool[parent_2]) || offspring.tabuSearch(L, T)) {
+        best_col = offspring;
         logger.lastItNumOffsprings = currentItNumOffsprings;
         return EA;
       }
 
-<<<<<<< HEAD
+      std::vector<int> sameIndvs;
       std::vector<int> closeIndvs;
       std::vector<int> nearIndvs;
       for (size_t i = 0; i < PS; i++) {
         int tempDist = offspring.distanceTo(&pool[i], true);
-        if (tempDist <= R) {
+        if (tempDist < R) {
           nearIndvs.push_back(i);
           if (tempDist <= R/10) {
             closeIndvs.push_back(i);
+            if (tempDist == 0) {
+              sameIndvs.push_back(i);
+            }
           }
         }
       }
-=======
-      int dist1 = offspring.distanceTo(&pool[parent_1], true);
-      int dist2 = offspring.distanceTo(&pool[parent_2], true);
->>>>>>> parentSpacing
 
-      if (dist1 < R && dist2 < R) {
+      if (!closeIndvs.empty() || nearIndvs.size() > 3) {
         poolDensityCounter++;
-<<<<<<< HEAD
       }
-      if ((float) rand()/RAND_MAX < pGreedy && !closeIndvs.empty()) {
-        int worstIndv = 0;
+
+      if (sameIndvs.size() > 1) {
+        offspring = EvolPartialCol(k, &graph);
+        if(offspring.greedy() || offspring.tabuSearch(10*L, T)) {
+          best_col = offspring;
+          logger.lastItNumOffsprings = currentItNumOffsprings;
+          return EA;
+        }
+        updatePool(offspring, &pool[sameIndvs[0]], pool, priority);
+      } else if ((float) rand()/RAND_MAX < pGreedy && !closeIndvs.empty()) {
+        int worst_col = 0;
+        int worst_col_fitness;
         for (size_t i = 1; i < closeIndvs.size(); i++) {
-          if (pool[closeIndvs[i]].evaluate() > pool[worstIndv].evaluate()) {
-            worstIndv = closeIndvs[i];
+          int temp_fitness = pool[closeIndvs[i]].evaluate();
+          if (temp_fitness > pool[worst_col].evaluate()) {
+            worst_col = closeIndvs[i];
+            worst_col_fitness = temp_fitness;
           }
         }
-        updatePool(offspring, &pool[worstIndv], pool, priority);
+        if (offspring.evaluate() < worst_col_fitness) {
+          updatePool(offspring, &pool[worst_col], pool, priority);
+        }
       } else if((float) rand()/RAND_MAX < pGreedy && nearIndvs.size() > 3) {
         // there is a near individual in the pool
-        int tempL = (float) poolDensityCounter > (float) 0.25*iter ?
+        int temp_L = (float) poolDensityCounter > (float) 0.15*iter ?
           (int) 10*((float) poolDensityCounter/(iter+1))*L : L;
-=======
-        if ((float) rand()/RAND_MAX < pGreedy) {
-          // there is a near individual in the pool
-          int tempL = (float) poolDensityCounter > (float) 0.25*iter ?
-            (int) 10*((float) poolDensityCounter/(iter+1))*L : L;
->>>>>>> parentSpacing
 
-          // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(k, &graph, tempL, T);
+        // drop offspring and generate new partial coloring with priorityGreedy()
+        offspring = EvolPartialCol(k, &graph);
 
-          int res = (float) rand()/RAND_MAX < 0.3 ? offspring.priorityGreedy(priority) : (float) rand()/RAND_MAX < 0.3 ? offspring.greedy() : offspring.dsatur();
+        int res = (float) rand()/RAND_MAX < 0.3 ? offspring.priorityGreedy(priority) : offspring.greedy();
 
-          if(res || offspring.tabuSearch()) {
-            cur_best_coloring = offspring;
-            logger.lastItNumOffsprings = currentItNumOffsprings;
-            return EA;
+        if(res || offspring.tabuSearch(temp_L, T)) {
+          best_col = offspring;
+          logger.lastItNumOffsprings = currentItNumOffsprings;
+          return EA;
+        }
+
+        int worst_col = 0;
+        auto tempIndv = closeIndvs.empty() ? nearIndvs : closeIndvs;
+        for (size_t i = 1; i < tempIndv.size(); i++) {
+          if (pool[tempIndv[i]].evaluate() > pool[worst_col].evaluate()) {
+            worst_col = tempIndv[i];
           }
         }
-      } else if (dist1 < R/10) {
-        if (offspring.evaluate() < pool[parent_1].evaluate()) {
+        updatePool(offspring, &pool[worst_col], pool, priority);
+      } else {
+        // delete worst parent and insert child to pool
+        if (pool[parent_1].evaluate() <= pool[parent_2].evaluate()) {
+          updatePool(offspring, &pool[parent_2], pool, priority);
+        } else {
           updatePool(offspring, &pool[parent_1], pool, priority);
         }
-        continue;
-      } else if (dist2 < R/10) {
-        if (offspring.evaluate() < pool[parent_2].evaluate()) {
-          updatePool(offspring, &pool[parent_2], pool, priority);
-        }
-        continue;
       }
 
-      if (poolDensityCounter > updateLimit/3) {
+      if (poolDensityCounter > update_limit/5) {
         break;
-      }
-
-      // delete worst parent and insert child to pool
-      if (pool[parent_1].evaluate() <= pool[parent_2].evaluate()) {
-        updatePool(offspring, &pool[parent_2], pool, priority);
-      } else {
-        updatePool(offspring, &pool[parent_1], pool, priority);
       }
 
       logger.totNumOffsprings++;
       currentItNumOffsprings++;
     }
-    std::cout << "updateLimit = " << updateLimit << " poolDensityCounter = " << poolDensityCounter << '\n';
+    std::cout << "update_limit = " << update_limit << " poolDensityCounter = " << poolDensityCounter << '\n';
     std::cout << "PS = " << PS << " N = " << N << '\n';
-    if (poolDensityCounter <= updateLimit/100 && PS < N/20) {
-      for (size_t i = 0; i < deltaPS; i++) {
-        MMTPartialColoring newIndv = MMTPartialColoring(k, &graph, L, T);
+    if (poolDensityCounter <= update_limit/100 && PS < N/20) {
+      for (size_t i = 0; i < delta_PS; i++) {
+        EvolPartialCol newIndv = EvolPartialCol(k, &graph);
 
-        if(newIndv.priorityGreedy(priority) || newIndv.tabuSearch()) {
-          cur_best_coloring = newIndv;
+        if(newIndv.priorityGreedy(priority) || newIndv.tabuSearch(L,T)) {
+          best_col = newIndv;
           logger.lastItNumOffsprings = currentItNumOffsprings;
           return INIT_DSATUR;
         }
         insertPool(newIndv, pool, priority);
-        PS++;
+        PS += delta_PS;
       }
-    } else if (poolDensityCounter > updateLimit/3) {
-      R *= 0.8;
+    } else if (poolDensityCounter > update_limit/5) {
+      R -= delta_R;
     }
     if (L < 250*N) {
-      L += deltaL;
+      L += delta_L;
     }
 
     std::cout << "L = " << L << "; "
@@ -247,8 +238,8 @@ MMT::status MMT::EADecision(int k, std::vector<MMTPartialColoring>& pool) {
   return EA_TIME_OUT;
 }
 
-MMTPartialColoring* MMT::getColoring(){
-  return &cur_best_coloring;
+EvolPartialCol* MMT::getColoring(){
+  return &best_col;
 }
 
 std::stringstream MMT::streamLogs(){
@@ -261,27 +252,61 @@ std::stringstream MMT::streamLogs(){
   return logs;
 }
 
-MMT::status MMT::initPool(int k, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority) {
+MMT::status MMT::initPool(int k, std::vector<EvolPartialCol>& pool, std::vector<int>& priority, bool diversify) {
 
   // clear pool from old inits
   pool.clear();
 
   // apply (different) initialization algorithms on the pool
-  // DSATUR Block
-  for (size_t i = 0; i < PS; i++) {
-    MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, this->L, this->T);
-    if(dsatur.dsatur() || dsatur.tabuSearch()) {
-      cur_best_coloring = dsatur;
-      logger.lastItNumOffsprings = 0;
-      return MMT::INIT_DSATUR;
+  if (!diversify) {
+    // DSATUR Block
+    for (size_t i = 0; i < PS; i++) {
+      EvolPartialCol dsatur_col = EvolPartialCol(k, &graph);
+      if(dsatur_col.dsatur() || dsatur_col.tabuSearch(L,T)) {
+        best_col = dsatur_col;
+        logger.lastItNumOffsprings = 0;
+        return MMT::INIT_DSATUR;
+      }
+      insertPool(dsatur_col, pool, priority);
     }
-    insertPool(dsatur, pool, priority);
+  } else {
+    // GREEDY Block
+    for (size_t i = 0; i < PS/3; i++) {
+      EvolPartialCol greedy_col = EvolPartialCol(k, &graph);
+      if(greedy_col.greedy() || greedy_col.tabuSearch(L,T)) {
+        best_col = greedy_col;
+        logger.lastItNumOffsprings = 0;
+        return MMT::INIT_GREEDY;
+      }
+      insertPool(greedy_col, pool, priority);
+    }
+    // DSATUR Block
+    for (size_t i = 0; i < PS/3; i++) {
+      EvolPartialCol dsatur_col = EvolPartialCol(k, &graph);
+      if(dsatur_col.dsatur() || dsatur_col.tabuSearch(L,T)) {
+        best_col = dsatur_col;
+        logger.lastItNumOffsprings = 0;
+        return MMT::INIT_DSATUR;
+      }
+      insertPool(dsatur_col, pool, priority);
+    }
+    // TABU SEARCH Block
+    int size_tabu_block = PS - pool.size();
+    for (size_t i = 0; i < size_tabu_block; i++) {
+      EvolPartialCol tabu_col = EvolPartialCol(k, &graph);
+      if(tabu_col.dsatur() || tabu_col.tabuSearch(L,T)) {
+        best_col = tabu_col;
+        logger.lastItNumOffsprings = 0;
+        return MMT::INIT_DSATUR;
+      }
+      insertPool(tabu_col, pool, priority);
+    }
   }
 
   return UNSOLVED;
 }
 
-void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+void MMT::insertPool(EvolPartialCol& new_individual, std::vector<EvolPartialCol>& pool, std::vector<int>& priority){
   // update priority
   for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
 
@@ -289,7 +314,7 @@ void MMT::insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialC
   pool.push_back(new_individual);
 }
 
-void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+void MMT::updatePool(EvolPartialCol& new_individual, EvolPartialCol* old_individual, std::vector<EvolPartialCol>& pool, std::vector<int>& priority){
   // update
   for (const auto & uncol_v : old_individual->uncolored) priority[uncol_v]--;
   for (const auto & uncol_v : new_individual.uncolored) priority[uncol_v]++;
@@ -298,15 +323,16 @@ void MMT::updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old
   *old_individual = new_individual;
 }
 
-void MMT::removePool(int indexRemoveIndv, std::vector<MMTPartialColoring>& pool, std::vector<int>& priority){
+void MMT::removePool(int indexRemoveIndv, std::vector<EvolPartialCol>& pool, std::vector<int>& priority){
   // update
   for (const auto & uncol_v : pool[indexRemoveIndv].uncolored) priority[uncol_v]--;
 
   // remove from pool
   pool.erase(pool.begin() + indexRemoveIndv);
+  PS--;
 }
 
-std::vector<int> MMT::getWorstIndvs(std::vector<MMTPartialColoring>& pool, int returnSize){
+std::vector<int> MMT::getWorstIndvs(std::vector<EvolPartialCol>& pool, int returnSize){
   std::vector<int> sumDists(pool.size(),0);
   for (size_t i = 0; i < pool.size(); i++) {
     for (size_t j = i+1; j < pool.size(); j++) {
@@ -325,17 +351,26 @@ std::vector<int> MMT::getWorstIndvs(std::vector<MMTPartialColoring>& pool, int r
   return res;
 }
 
-int MMT::setR(std::vector<MMTPartialColoring>& pool){
-  int sum = 0;
-  for (int i = 0; i < PS; i++) {
-    for (int j = i; j < PS; j++) {
-      sum += pool[i].distanceTo(&pool[j],true);
+void MMT::adoptBounds(){
+  std::ifstream bounds_file("bleile/bounds.txt");
+  std::string s;
+  while(getline(bounds_file, s)) {
+    std::stringstream ss(s);
+    std::string inst;
+    int lb, ub, lazylb;
+    ss >> inst >> lb >> ub >> lazylb;
+    if (this->graph.instance == inst) {
+      // logger.UB = ub;
+      // logger.LB = lb;
+      logger.LB = lazylb;
+      std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
+      break;
     }
   }
-  return sum / (PS*(PS+1));
+  bounds_file.close();
 }
 
-void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded){
+void MMT::printPoolDistance(std::vector<EvolPartialCol>& pool, bool expanded){
   assert(pool.size() != 0);
   std::cout << "pool distances : ";
   int sum = 0, size = pool.size();
@@ -354,14 +389,19 @@ void MMT::printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded
   std::cout << "avg = " << sum / ((size*(size+1))/2) << '\n';
 }
 
-void MMT::printPoolFitness(std::vector<MMTPartialColoring>& pool){
-  measure sum = 0;
-  measure best = std::numeric_limits<measure>::max();
+void MMT::printPoolFitness(std::vector<EvolPartialCol>& pool){
+  int sum = 0;
+  int best = std::numeric_limits<int>::max();
   for (auto& individual : pool) {
-    measure temp = individual.evaluate();
+    int temp = individual.evaluate();
     //std::cout << temp << " ; " << individual.uncolored.size() << "\t";
     sum += temp;
     best = temp < best ? temp : best;
   }
   std::cout << "|\tbest = " << best << "; average = " << sum / pool.size() << '\n';
+}
+
+int COLORbleile(int ncount, int ecount, int *elist) {
+  std::cout << "hello from c++" << '\n';
+  return 0;
 }

@@ -20,9 +20,9 @@ extern "C" {
 class MMT {
 public:
 
-  MMT(MMTGraph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
+  MMT(Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5)
    : graph(graph), L(L), T(T), time_limit_sec(time_limit_sec), pool_size((pool_size/3)*3),
-   cur_best_coloring(MMTPartialColoring(graph->n, graph, L, T)), pGreedy(pGreedy), N(graph->n),
+   best_col(EvolPartialCol(graph->n, graph, L, T)), pGreedy(pGreedy), N(graph->n),
    clustering()
 
    {
@@ -30,44 +30,44 @@ public:
     // compute lower bound
     // compute upper bound
     logger.UB = graph->n;
-    measure_best_solution = N*N;
+    int_best_solution = N*N;
 
     std::cout << "N = " << N << '\n';
   }
 
   void start(){
     clock_t t = clock();
-    PHASE0_EAInit();
-    PHASE1_EAOptimizer();
+    evolInit();
+    evolOptimize();
     if(logger.UB != logger.LB) {
       // PHASE2_ColumnOptimization();
     } else {
-      cur_best_coloring.greedy();
+      best_col.greedy();
     }
-    cur_best_coloring.toString();
+    best_col.toString();
     logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
   }
 
-  void PHASE0_EAInit(){
-    MMTPartialColoring init = MMTPartialColoring(logger.UB, &graph, L, T);
+  void evolInit(){
+    EvolPartialCol init = EvolPartialCol(logger.UB, &graph, L, T);
     init.dsatur();
     init.tabuSearch();
-    cur_best_coloring = init;
+    best_col = init;
     if (init.uncolored.empty()) {
       logger.UB = init.getNumColors();
     }
   }
 
-  void PHASE1_EAOptimizer() {
+  void evolOptimize() {
     while (logger.UB > logger.LB) {
-      EADecision(logger.UB-1);
+      evolDecision(logger.UB-1);
       if (logger.status == EA_TIME_OUT) break;
-      logger.UB = cur_best_coloring.getNumColors();
+      logger.UB = best_col.getNumColors();
       std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
     }
   }
 
-  void EADecision(int k) {
+  void evolDecision(int k) {
     // bool analyse_pool = clustering.k == k ? true : false;
     // std::cout << "analyse_pool ? " << analyse_pool << '\n';
     // reset lastItNumOffsprings
@@ -75,7 +75,7 @@ public:
     // poolSimilarity : collects properties for every individual in the pool
     //                  on which basis two individuals are considered similar
     //                  ( #unclored vertices , fitness )
-    std::unordered_set<std::pair<int, measure>, UInt32PairHash> poolSimilarity;
+    std::unordered_set<std::pair<int, int>, UInt32PairHash> poolSimilarity;
 
     // priority vector : for every vertex keeps track of the total number this
     //                   vertex is left uncolored in the current pool
@@ -83,7 +83,7 @@ public:
 
     // pool : stores the current partial colorings
     //        init default pool with empty partial solutions
-    std::vector<MMTPartialColoring> pool;
+    std::vector<EvolPartialCol> pool;
 
     // apply different initialization algorithms on the pool
     // 1/3 SEQ , 1/3 DSATUR , 1/3 TABU SEARCH
@@ -91,10 +91,10 @@ public:
     // DSATUR Block
     int dsatur_block_size = pool_size/3;
     for (size_t i = 0; i < dsatur_block_size; i++) {
-      MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
+      EvolPartialCol dsatur = EvolPartialCol(k, &graph, L, T);
       if(dsatur.dsatur() || dsatur.tabuSearch()) {
         logger.status = INIT_DSATUR;
-        cur_best_coloring = dsatur;
+        best_col = dsatur;
         return;
       }
       insertPool(dsatur, pool, poolSimilarity, priority);
@@ -103,10 +103,10 @@ public:
     // SEQ Block
     int seq_block_size = pool_size/3;
     for (size_t i = 0; i < seq_block_size; i++) {
-      MMTPartialColoring dsatur = MMTPartialColoring(k, &graph, L, T);
+      EvolPartialCol dsatur = EvolPartialCol(k, &graph, L, T);
       if(dsatur.dsatur() || dsatur.tabuSearch()) {
         logger.status = INIT_GREEDY;
-        cur_best_coloring = dsatur;
+        best_col = dsatur;
         return;
       }
       insertPool(dsatur, pool, poolSimilarity, priority);
@@ -115,10 +115,10 @@ public:
     // TABU SEARCH Block
     int tabusearch_block_size = pool_size - seq_block_size - dsatur_block_size;
     for (size_t i = 0; i < tabusearch_block_size; i++) {
-      MMTPartialColoring tabusearch = MMTPartialColoring(k, &graph, L, T);
+      EvolPartialCol tabusearch = EvolPartialCol(k, &graph, L, T);
       if(tabusearch.tabuSearch()) {
         logger.status = INIT_TABU;
-        cur_best_coloring = tabusearch;
+        best_col = tabusearch;
         return;
       }
       insertPool(tabusearch, pool, poolSimilarity, priority);
@@ -132,11 +132,11 @@ public:
       auto parent_1 = std::next(std::begin(pool), (int) rand() % pool.size());
       auto parent_2 = std::next(std::begin(pool), (int) rand() % pool.size());
 
-      MMTPartialColoring offspring(k, &graph, L, T);
+      EvolPartialCol offspring(k, &graph, L, T);
       // generate offspring and if it is not already a solution improve by calling tabuSearch on it
       if(offspring.crossover(&(*parent_1), &(*parent_2)) || offspring.tabuSearch()) {
         logger.status = EA;
-        cur_best_coloring = offspring;
+        best_col = offspring;
         // printPoolDistance(pool);
         return;
       }
@@ -160,10 +160,10 @@ public:
 
         if ((float) rand()/RAND_MAX < pGreedy) {
           // drop offspring and generate new partial coloring with priorityGreedy()
-          offspring = MMTPartialColoring(k, &graph, L, T);
+          offspring = EvolPartialCol(k, &graph, L, T);
 
           if(offspring.priorityGreedy(priority) || offspring.tabuSearch()) {
-            cur_best_coloring = offspring;
+            best_col = offspring;
             return;
           }
         }
@@ -271,11 +271,11 @@ public:
     }
   }
 
-  MMTPartialColoring* getColoring(){
-    return &cur_best_coloring;
+  EvolPartialCol* getColoring(){
+    return &best_col;
   }
 
-  void setClustering(PartialColoringCluster& clustering){
+  void setClustering(PartialColCluster& clustering){
     this->clustering = clustering;
   }
 
@@ -293,7 +293,7 @@ public:
     logs << logger.colOpt;
     return logs;
   }
-  MMTGraph graph;
+  Graph graph;
 
 private:
 
@@ -327,19 +327,19 @@ private:
     }
   };
 
-  int L, T, time_limit_sec, pool_size, measure_best_solution;
+  int L, T, time_limit_sec, pool_size, int_best_solution;
   const int N;
-  MMTPartialColoring cur_best_coloring;
+  EvolPartialCol best_col;
   double pGreedy;
   const double priority_noise = 0.5;
-  PartialColoringCluster clustering;
+  PartialColCluster clustering;
 
   LogData logger;
 
   const int numColOpt = 1000;
   std::queue< std::unordered_set<nodeid> > columns;
 
-  void insertPool(MMTPartialColoring& new_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
+  void insertPool(EvolPartialCol& new_individual, std::vector<EvolPartialCol>& pool, std::unordered_set<std::pair<int, int>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
     // update poolSimilarity
     poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
 
@@ -350,13 +350,13 @@ private:
     pool.push_back(new_individual);
 
     // update columns
-    if(new_individual.evaluate() < measure_best_solution){
-      measure_best_solution = new_individual.evaluate();
+    if(new_individual.evaluate() < int_best_solution){
+      int_best_solution = new_individual.evaluate();
       addStableSets(&new_individual);
     }
   }
 
-  void updatePool(MMTPartialColoring& new_individual, MMTPartialColoring* old_individual, std::vector<MMTPartialColoring>& pool, std::unordered_set<std::pair<int, measure>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
+  void updatePool(EvolPartialCol& new_individual, EvolPartialCol* old_individual, std::vector<EvolPartialCol>& pool, std::unordered_set<std::pair<int, int>, UInt32PairHash>& poolSimilarity, std::vector<int>& priority){
     // update poolSimilarity
     poolSimilarity.erase(std::make_pair(old_individual->uncolored.size(), old_individual->evaluate()));
     poolSimilarity.insert(std::make_pair(new_individual.uncolored.size(), new_individual.evaluate()));
@@ -369,13 +369,13 @@ private:
     *old_individual = new_individual;
 
     // update columns
-    if(new_individual.evaluate() < measure_best_solution){
-      measure_best_solution = new_individual.evaluate();
+    if(new_individual.evaluate() < int_best_solution){
+      int_best_solution = new_individual.evaluate();
       addStableSets(&new_individual);
     }
   }
 
-  void printPoolDistance(std::vector<MMTPartialColoring>& pool, bool expanded = false){
+  void printPoolDistance(std::vector<EvolPartialCol>& pool, bool expanded = false){
     assert(pool.size() != 0);
     std::cout << "pool distances : " << '\n';
     int sum = 0, size = pool.size();
@@ -393,12 +393,12 @@ private:
     std::cout << "avg = " << sum / (size*(size-1)/2) << '\n';
   }
 
-  void printPoolFitness(std::vector<MMTPartialColoring>& pool){
+  void printPoolFitness(std::vector<EvolPartialCol>& pool){
     assert(pool.size() != 0);
-    measure sum = 0;
-    measure best = std::numeric_limits<measure>::max();
+    int sum = 0;
+    int best = std::numeric_limits<int>::max();
     for (auto& individual : pool) {
-      measure temp = individual.evaluate();
+      int temp = individual.evaluate();
       sum += temp;
       best = std::min(best, temp);
     }
@@ -406,8 +406,8 @@ private:
   }
 
   // stable sets of each newly best partial coloring is added to columns
-  void addStableSets(MMTPartialColoring* new_best){
-    new_best->lockColoring();
+  void addStableSets(EvolPartialCol* new_best){
+    new_best->buildColorClasses();
     for (auto& stable_set : new_best->color_classes) {
       columns.push(stable_set);
       if (columns.size() > numColOpt) columns.pop();
@@ -424,24 +424,24 @@ void documentation(char *instance, MMT* mmt, int i, int imax){
   doc.close();
 }
 
-void createCluster(const char * filename, MMTGraph * graph, int k, int num_center, int L = 100, int T = 10){
+void createCluster(const char * filename, Graph * graph, int k, int num_center, int L = 100, int T = 10){
 
-  PartialColoringCluster A(num_center, graph->n, k, graph);
+  PartialColCluster A(num_center, graph->n, k, graph);
 
   int it  = num_center*10000;
 
   std::cout << std::endl;
 
   for (size_t i = 0; i < it; i++) {
-    PartialColoring basetemp0(k, graph);
+    PartialCol basetemp0(k, graph);
     basetemp0.greedy();
     // temp0.tabuSearch();
-    // PartialColoring basetemp0 = temp0;
+    // PartialCol basetemp0 = temp0;
     A.feed(basetemp0);
-    // MMTPartialColoring temp1(k, &graph, L, T);
+    // EvolPartialCol temp1(k, &graph, L, T);
     // temp1.dsatur();
     // temp1.tabuSearch();
-    // PartialColoring basetemp1 = temp1;
+    // PartialCol basetemp1 = temp1;
     // A.feed(basetemp1);
     if((i % (it/500)) == 0){
       cout << "\e[A\r\e[0K"<< ((float) i/it)*100 << '%'<<endl;;
@@ -451,23 +451,23 @@ void createCluster(const char * filename, MMTGraph * graph, int k, int num_cente
   A.writeToFile(filename);
 }
 
-void testCluster(const char * filename, MMTGraph * graph, int k, int num_center, int L = 500, int T = 10){
-  PartialColoringCluster B(filename, graph);
+void testCluster(const char * filename, Graph * graph, int k, int num_center, int L = 500, int T = 10){
+  PartialColCluster B(filename, graph);
 
   int it  = num_center*10000;
 
   std::cout << std::endl;
 
   for (size_t i = 0; i < it; i++) {
-    PartialColoring basetemp0(k, graph);
+    PartialCol basetemp0(k, graph);
     // basetemp0.greedy();
     // temp0.tabuSearch();
-    // PartialColoring basetemp0 = temp0;
+    // PartialCol basetemp0 = temp0;
     B.test(basetemp0, true);
-    // MMTPartialColoring temp1(k, graph, L, T);
+    // EvolPartialCol temp1(k, graph, L, T);
     // temp1.dsatur();
     // temp1.tabuSearch();
-    // PartialColoring basetemp1 = temp1;
+    // PartialCol basetemp1 = temp1;
     // B.test(basetemp1, true);
     if((i % (it/500)) == 0){
       cout << "\e[A\r\e[0K"<< ((float) i/it)*100 << '%'<<endl;;
@@ -485,9 +485,9 @@ int main(int argc, char **av) {
   // const char * arrfilename = filename.c_str();
   // int k = 28;
   //
-  MMTGraph graph(argc,av);
+  Graph graph(argc,av);
   //
-  // MMTPartialColoring col(k, &graph, L, T);
+  // EvolPartialCol col(k, &graph, L, T);
   // col.dsatur();
   // col.tabuSearch();
 
@@ -495,7 +495,7 @@ int main(int argc, char **av) {
   //
   // testCluster(arrfilename, &graph, k, 50);
 
-  // PartialColoringCluster B(arrfilename, &graph);
+  // PartialColCluster B(arrfilename, &graph);
 
   // B.toString(true);
 
@@ -512,13 +512,13 @@ int main(int argc, char **av) {
 
   //
   //
-  // PartialColoringCluster A(PS, graph.n, k, &graph);
+  // PartialColCluster A(PS, graph.n, k, &graph);
   //
   // for (size_t i = 0; i < PS*50; i++) {
-  //   PartialColoring temp0(k, &graph);
+  //   PartialCol temp0(k, &graph);
   //   temp0.greedy();
   //   A.feed(temp0);
-  //   PartialColoring temp1(k, &graph);
+  //   PartialCol temp1(k, &graph);
   //   temp1.dsatur();
   //   A.feed(temp1);
   // }
@@ -528,7 +528,7 @@ int main(int argc, char **av) {
   // A.toString();
 
   // for (size_t i = 0; i < 10000; i++) {
-  //   PartialColoring temp0(k, &graph);
+  //   PartialCol temp0(k, &graph);
   //   temp0.greedy();
   //   A.test(temp0);
   // }
