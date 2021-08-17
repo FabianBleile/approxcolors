@@ -403,5 +403,14 @@ void MMT::printPoolFitness(std::vector<EvolPartialCol>& pool){
 
 int COLORbleile(int ncount, int ecount, int *elist) {
   std::cout << "hello from c++" << '\n';
+
   return 0;
+
+  // Graph g(ncount, ecount, elist);
+  //
+  // MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 28000, /*pool size*/ 10, true); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  //
+  // mmt.start();
+  //
+  // return mmt.getColoring()->getNumColors();
 }

@@ -106,7 +106,7 @@ ifeq ($(USE_UBSAN), 1)
 endif
 
 
-OBJFILES=color.o color_backup.o color_parms.o graph.o greedy.o $(LPSOURCE) mwis.o $(GRBMWIS) mwis_grdy.o plotting.o heap.o util.o cliq_enum.o bbsafe.o rounding_mode.o mmt_connector.o c_connector.o mmt.o mmt_graph.o
+OBJFILES=color.o color_backup.o color_parms.o graph.o greedy.o $(LPSOURCE) mwis.o $(GRBMWIS) mwis_grdy.o plotting.o heap.o util.o cliq_enum.o bbsafe.o rounding_mode.o
 STABFILES=stable.o graph.o greedy.o util.o $(LPSOURCE) cliq_enum.o
 STABGRDYFILES=stable_grdy.o graph.o greedy.o util.o $(LPSOURCE) cliq_enum.o mwis.o mwis_grdy.o  heap.o $(SEWELL_LIB)
 BOSSFILES=graph.o bbsafe.o util.o rounding_mode.o
@@ -154,11 +154,11 @@ test: testmyciel4 testqueen8
 libexactcolor.a: $(OBJFILES)
 	$(AR) rcs libexactcolor.a $(OBJFILES)
 
-color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker
-	$(CXX)  $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
+	$(CXX) $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
 
-color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES)
-	$(CC) $(CFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
+color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES) c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
+	$(CXX) $(CXXFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
 
 color_jobkiller:  $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CKILLERFILES)
 	$(CC) $(CFLAGS) -o color_jobkiller $(CKILLERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)

@@ -1,23 +1,12 @@
 #include "../header/mmt.h"
-#include "../header/mmt_graph.h"
-#include "../header/c_connector.h"
 #include <iostream>
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
+  #include "../header/c_connector.h"
 
-int MMTbleile(int ncount, int ecount, int *elist) {
-  Graph g(ncount, ecount, elist);
+  int MMTbleile(int ncount, int ecount, int *elist) {
+    return COLORbleile(ncount, ecount, elist);
+  }
 
-  MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 28000, /*pool size*/ 10, true); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
-
-  mmt.start();
-
-  return 0;
 }
-
-#ifdef __cplusplus
-}
-#endif

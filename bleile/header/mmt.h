@@ -5,8 +5,6 @@
 #include "mmt_partial_coloring.h"
 #include "bleile/utils/pair_hasher.hpp"
 
-#include "bleile/utils/color_cluster.cpp"
-
 #include <time.h>
 #include <vector>
 #include <utility>
@@ -15,6 +13,8 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+
+int COLORbleile(int ncount, int ecount, int *elist);
 
 class MMT {
 public:
