@@ -169,23 +169,6 @@ int PartialCol::evaluate() {
 /*
     Migrate PratialCol from k color classes to k_new classes
 */
-/*
-void EvolPartialCol::setK(int k_new){
-  if (k_new > this->k) {
-    std::cout << "requesting to increase k - this functionality is not implemented yet" << '\n';
-  } else if (k_new < this->k){
-    this->k = k_new;
-    uncolored.clear();
-    for (size_t i = 0; i < colors.size(); i++) {
-      if (colors[i] >= k_new) {
-        setColor(i, k_new);
-      }
-    }
-  }
-}
-*/
-
-
 void EvolPartialCol::setK(int k_new){
   if (k_new > this->k) {
     std::cout << "requesting to increase k - this functionality is not implemented yet" << '\n';
@@ -455,6 +438,14 @@ int EvolPartialCol::getOptimalColor(nodeid u, std::vector<std::vector<int>>& tab
       costs[colors[v]] += graph->getDegree(v);
     }
   }
+  /*
+     An dieser Stelle wird die TS des MMT nicht 1:1 übernommen.
+     Es werden keine Schritte (u,c) erlaubt, welche tabu sind aber die Fitness verbessern
+     Der Grund ist bessere Performance, durch das Verbieten aller tabuisierter Schritte
+     Was sich lohnen könnte ist eine lokal besten Fitnesswert zu speichern - z.B. bester
+     Wert aus den letzten T Iterationen und bei unterschreiten dieses Werts auch
+     tabuisierte Schritte zuzulassen
+  */
   for (color c = 0; c < k; c++) {
     if (tabuList[u][c] > it) {
       costs[c] += K;
