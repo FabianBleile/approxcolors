@@ -76,8 +76,8 @@ export CXX=g++
 #
 # VALLGRIND MEMORY LEAK CHECK:
 #		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen10_10.col
-# CFLAGS+= -DCOMPILE_FOR_VALGRIND
-# CXXFLAGS += -g
+CFLAGS+= -DCOMPILE_FOR_VALGRIND
+CXXFLAGS += -g
 
 
 BLEILE_DIR=bleile
