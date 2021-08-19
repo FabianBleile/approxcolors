@@ -186,7 +186,7 @@ clean:
 	rm -rf callgrind*
 	rm -rf mmt.dSYM*
 	cd $(SEWELL_DIR) && $(MAKE) clean
-	cd $(BLEILE_DIR) && $(MAKE) clean
+	cd $(BLEILE_DIR) && $(MAKE) clean_ext
 
 SRCFILES=bbsafe.c color_backup.c  color.h color_parms.c  graph.c   heap.c     lpgurobi.c  mwis.c       mwis.h                  mwis_sewell/mwss_ext.h  partition.c  queen.c        test_boss.c    util.c bbsafe.h     color.c         color_jobkiller.c  color_parms.h    color_worker.c   graph.h   heap.h     lp.h        mwis_grb.c   mwis_sewell/mwss.c      mwis_sewell/mwss.h      plotting.c   stable.c       test_tell.c cliq_enum.c  color_defs.h    color_main.c       color_private.h  complement.c     greedy.c  lpcplex.c  lpqsopt.c   mwis_grdy.c  mwis_sewell/mwss_ext.c  mwis_sewell/wstable.c   plotting.h   stable_grdy.c  test_worker.c
 

@@ -33,7 +33,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors ../test/dimacs/C4000.5.col
+	./approxcolors ../test/dimacs/C2000.5.col
 
 testdummy:
 	./approxcolors ../test/dimacs/DSJC250.5.col
@@ -47,14 +47,14 @@ clean:
 
 
 approxcolors: approxcolors.a $(BLEILE_DIR)/approxcolors.cpp
-	$(CXX) $(CXXFLAGS) -c -o approxcolors.o $(BLEILE_DIR)/approxcolors.cpp
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_DIR)/approxcolors.cpp -o approxcolors.o
 	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
 
 
 approxcolors.a: $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
-	$(CXX) $(CXXFLAGS) -c -o hungarian.o $(BLEILE_UTILS)/hungarian.cpp
-	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o $(BLEILE_SRC)/mmt_graph.cpp
-	$(CXX) $(CXXFLAGS) -c -o mmt_partial_coloring.o $(BLEILE_SRC)/mmt_partial_coloring.cpp
-	$(CXX) $(CXXFLAGS) -c -o mmt.o $(BLEILE_SRC)/mmt.cpp
-	$(CXX) $(CXXFLAGS) -c -o c_connector.o $(BLEILE_SRC)/c_connector.cpp
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_UTILS)/hungarian.cpp -o hungarian.o
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_graph.cpp -o mmt_graph.o
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_partial_coloring.cpp -o mmt_partial_coloring.o
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt.cpp -o mmt.o
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/c_connector.cpp -o c_connector.o
 	$(AR) rcs approxcolors.a hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o
