@@ -3,7 +3,7 @@
 
 #include "mmt_graph.h"
 #include "mmt_partial_coloring.h"
-#include "bleile/utils/pair_hasher.hpp"
+#include "../utils/pair_hasher.hpp"
 
 #include <time.h>
 #include <vector>
@@ -14,7 +14,15 @@
 #include <fstream>
 #include <sstream>
 
-int COLORbleile(int ncount, int ecount, int *elist);
+typedef struct COLORset {
+    int count;
+    int age;
+    int *members;
+    struct COLORset *next;
+} COLORset;
+
+int COLORbleile(int ncount, int ecount, int *elist, int *ncolors,
+                 COLORset **colorclasses, int L, int T, int time_limit, int lb);
 
 class MMT {
 public:
@@ -48,7 +56,7 @@ public:
     std::vector<kLogData> kLogData;
   };
 
-  MMT(Graph * graph, int L, int T, int time_limit_sec, int pool_size = 10, bool set_bounds = false);
+  MMT(Graph * graph, int L, int T, int time_limit_sec, int pool_size = 10, bool set_bounds = false, int lb = 2);
 
   void start();
 
@@ -56,7 +64,7 @@ public:
 
   void evolOptimize();
 
-  status evolDecision(int k, std::vector<EvolPartialCol>& pool);
+  status evolDecision(int k, std::vector<EvolPartialCol>& pool, clock_t T);
 
   EvolPartialCol* getColoring();
 

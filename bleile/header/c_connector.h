@@ -7,7 +7,8 @@ extern "C"
 {
 #endif
 
-int MMTbleile(int ncount, int ecount, int *elist);
+int MMTbleile(int ncount, int ecount, int *elist, int *ncolors,
+                 COLORset **colorclasses, int L, int T, int time_limit, int lb);
 
 #ifdef __cplusplus
 }

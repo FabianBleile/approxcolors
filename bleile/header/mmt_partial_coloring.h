@@ -1,11 +1,11 @@
 #ifndef MMT_PARTIAL_COLORING_H_
 #define MMT_PARTIAL_COLORING_H_
 
-#include "bleile/header/mmt_graph.h"
-#include "bleile/utils/pair_hasher.hpp"
+#include "../header/mmt_graph.h"
+#include "../utils/pair_hasher.hpp"
 
 extern "C" {
-  #include "bleile/utils/hungarian.h"
+  #include "../utils/hungarian.h"
 }
 
 #include <iostream>
@@ -50,7 +50,7 @@ public:
 
   int getNumColors() const ;
 
-  void toString(int maxLines = 14) const ;
+  void toString(int maxLines = 3) const ;
 
   bool operator < (const PartialCol& S) const ;
 

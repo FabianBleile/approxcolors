@@ -28,7 +28,7 @@ public:
 
   bool writeToElist(char *f, int *pncount, int *pecount, int **pelist);
 
-  void initFromElist(int ncount, int ecount, int *elist);
+  void initFromElist(int *elist);
 
   bool isAdj(const nodeid u, const nodeid v) const ;
 

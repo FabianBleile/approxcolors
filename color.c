@@ -3247,16 +3247,20 @@ static int init_root_colordata (COLORproblem* colorproblem)
                                  &(cd->ccount), &(cd->cclasses));
              COLORcheck_rval (rval, "COLORgreedy failed");
           } else {
-             rval = MMTbleile (cd->ncount, cd->ecount, cd->elist);
-             COLORcheck_rval (rval, "MMTbleile failed");
-          }/*
-          else {
+            //
+            // rval = compute_lower_bound(cd, colorproblem);
+            // COLORcheck_rval(rval,"Failed in compute_lower_bound");
+            rval = MMTbleile (cd->ncount, cd->ecount, cd->elist,
+                                 &(cd->ccount), &(cd->cclasses),
+                                 10000, 45, 120, 2);
+            COLORcheck_rval (rval, "MMTbleile failed");
+          }
+          /*else {
              rval = COLORdsatur (cd->ncount, cd->ecount, cd->elist,
                                  &(cd->ccount), &(cd->cclasses));
              COLORcheck_rval (rval, "COLORdsatur failed");
           }*/
 
-          printf ("Greedy Colors: %d\n", cd->ccount); fflush (stdout);
           print_colors(cd->cclasses,cd->ccount);
           COLORcopy_sets(&(cd->bestcolors),&(cd->nbestcolors),
                          cd->cclasses,cd->ccount);

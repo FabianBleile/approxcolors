@@ -1,4 +1,4 @@
-#include "bleile/header/mmt_graph.h"
+#include "../header/mmt_graph.h"
 
 Graph::Graph(int argc, char **av) {
   // save graph instance
@@ -15,13 +15,18 @@ Graph::Graph(int argc, char **av) {
   if(!writeToElist(file, &n, &m, &elist))
     std::cout << "Fehler beim Einlesen der Instanz." << '\n';
 
-  initFromElist(n, m, elist);
+  initFromElist(elist);
 
   delete elist;
 }
 
 Graph::Graph(int ncount, int ecount, int *elist) {
-  initFromElist(ncount, ecount, elist);
+  assert(ncount != 0);
+  assert(ecount != 0);
+  assert(elist != NULL);
+  n = ncount;
+  m = ecount;
+  initFromElist(elist);
 }
 
 Graph::Graph(Graph * input) {
@@ -32,7 +37,7 @@ Graph::Graph(Graph * input) {
   adjList = input->adjList;
 }
 
-void Graph::initFromElist(int ncount, int ecount, int *elist){
+void Graph::initFromElist(int *elist){
   adjList = std::vector<std::vector<nodeid> >(n,std::vector<nodeid>());
 
   for (size_t i = 0; i < m; i++) {

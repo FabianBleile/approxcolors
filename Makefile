@@ -70,20 +70,10 @@ export CXX=g++
 # their use is circumvented. We also recommend to use QSopt as the LP-solver while
 # debugging with valgrind, as the commercial solvers impose valgrind errors internally.
 #
-# CALLGRIND :
-# 	valgrind --tool=callgrind ./approxcolors test/dimacs/DSJC250.5.col
-#		quick inspect on https://www.speedscope.app/
-#
-# VALLGRIND MEMORY LEAK CHECK:
-#		valgrind --leak-check=full --track-origins=yes ./approxcolors test/dimacs/queen10_10.col
-CFLAGS+= -DCOMPILE_FOR_VALGRIND
-CXXFLAGS += -g
 
 
 BLEILE_DIR=bleile
-BLEILE_HEADER=$(BLEILE_DIR)/header
-BLEILE_SRC=$(BLEILE_DIR)/src
-BLEILE_UTILS=$(BLEILE_DIR)/utils
+BLEILE_LIB=$(BLEILE_DIR)/approxcolors.a
 
 SEWELL_DIR=mwis_sewell
 SEWELL_LDFLAG=-L $(SEWELL_DIR) -lsewell
@@ -97,8 +87,7 @@ CFLAGS += -std=c99 -D_XOPEN_SOURCE=700 -pedantic -Wall -Wshadow -W -Wstrict-prot
 export CFLAGS
 
 CXXFLAGS += -std=c++17 -O3 -I$(EXACTCOLOR_DIR)
-
-CXXFLAGSLIGHT += -std=c++17 -pedantic -Wall -Wshadow -W -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith -Wnested-externs -Wundef -Wcast-qual -Wcast-align -Wwrite-strings -I$(LPINCLUDE)
+export CXXFLAGS
 
 # UBSAN
 ifeq ($(USE_UBSAN), 1)
@@ -123,17 +112,8 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	export CC=ccc-analyzer
 	scan-build -v -o clang make -j
 
-testall:
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), echo $(file);)
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), ./approxcolors $(file);)
-
-# best results: http://cedric.cnam.fr/~porumbed/graphs/
-
-testsingle:
-	./approxcolors test/dimacs/wap04a.col #R1000.5.col #latin_square_10.col #le450_25d.col #DSJC1000.1.col
-
-testdummy:
-	./approxcolors test/dimacs/DSJC500.5.col
+testapproxcolors:
+	./color test/dimacs/DSJC250.1.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con
@@ -154,17 +134,20 @@ test: testmyciel4 testqueen8
 libexactcolor.a: $(OBJFILES)
 	$(AR) rcs libexactcolor.a $(OBJFILES)
 
-color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
-	$(CXX) $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
+color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker $(BLEILE_LIB)
+	$(CXX) $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) $(BLEILE_LIB)
 
-color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES) c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
-	$(CXX) $(CXXFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) c_connector.o mmt.o mmt_partial_coloring.o mmt_graph.o hungarian.o
+color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES) $(BLEILE_LIB)
+	$(CXX) $(CXXFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) $(BLEILE_LIB)
 
 color_jobkiller:  $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CKILLERFILES)
 	$(CC) $(CFLAGS) -o color_jobkiller $(CKILLERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
 
 $(SEWELL_LIB): $(SEWELL_DIR)/*[hc] $(SEWELL_DIR)/Makefile
 	cd $(SEWELL_DIR) && $(MAKE) USE_UBSAN=$(USE_UBSAN)
+
+$(BLEILE_LIB): $(BLEILE_DIR)/*[hc] $(BLEILE_DIR)/Makefile
+	cd $(BLEILE_DIR) && $(MAKE)
 
 stable: $(EXACTCOLOR_LIB) $(STABFILES)
 	$(CC) $(CFLAGS) -o stable $(STABFILES)  $(EXACTCOLOR_LDFLAG)
@@ -180,9 +163,6 @@ complement: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(COMPFILES)
 
 dsatur: dsatur.o graph.o color.o rounding_mode.o $(EXACTCOLOR_LIB) $(SEWELL_LIB)
 	$(LD) $(CFLAGS) -o dsatur dsatur.o graph.o color.o color_parms.o rounding_mode.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
-
-approxcolors: approxcolors.o mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
-	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
 
 queen: queen.c
 	$(CC) $(CFLAGS) -o queen queen.c -lm -lpthread
@@ -206,6 +186,7 @@ clean:
 	rm -rf callgrind*
 	rm -rf mmt.dSYM*
 	cd $(SEWELL_DIR) && $(MAKE) clean
+	cd $(BLEILE_DIR) && $(MAKE) clean
 
 SRCFILES=bbsafe.c color_backup.c  color.h color_parms.c  graph.c   heap.c     lpgurobi.c  mwis.c       mwis.h                  mwis_sewell/mwss_ext.h  partition.c  queen.c        test_boss.c    util.c bbsafe.h     color.c         color_jobkiller.c  color_parms.h    color_worker.c   graph.h   heap.h     lp.h        mwis_grb.c   mwis_sewell/mwss.c      mwis_sewell/mwss.h      plotting.c   stable.c       test_tell.c cliq_enum.c  color_defs.h    color_main.c       color_private.h  complement.c     greedy.c  lpcplex.c  lpqsopt.c   mwis_grdy.c  mwis_sewell/mwss_ext.c  mwis_sewell/wstable.c   plotting.h   stable_grdy.c  test_worker.c
 
@@ -225,19 +206,6 @@ greedy.o:    greedy.c  color.h graph.h color_defs.h
 lpgurobi.o:  lpgurobi.c color.h lp.h color_defs.h
 lpcplex.o:   lpcplex.c color.h lp.h color_defs.h
 lpqsopt.o:   lpqsopt.c color.h lp.h color_defs.h
-approxcolors.o:		 $(BLEILE_DIR)/approxcolors.cpp $(BLEILE_HEADER)/mmt.h
-	$(CXX) $(CXXFLAGS) -c -o approxcolors.o $(BLEILE_DIR)/approxcolors.cpp
-c_connector.o: $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h $(BLEILE_HEADER)/mmt.h
-	$(CXX) $(CXXFLAGS) -c -o c_connector.o $(BLEILE_SRC)/c_connector.cpp
-mmt_connector.o: mmt_connector.c mmt_connector.h $(BLEILE_HEADER)/c_connector.h
-mmt.o:			 $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h lp.h
-	$(CXX) $(CXXFLAGS) -c -o mmt.o $(BLEILE_SRC)/mmt.cpp
-mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_HEADER)/mmt_partial_coloring.h
-	$(CXX) $(CXXFLAGS) -c -o mmt_graph.o $(BLEILE_SRC)/mmt_graph.cpp
-mmt_partial_coloring.o: $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.h
-	$(CXX) $(CXXFLAGS) -c -o mmt_partial_coloring.o $(BLEILE_SRC)/mmt_partial_coloring.cpp
-hungarian.o: $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
-	$(CXX) $(CXXFLAGS) -c -o hungarian.o $(BLEILE_UTILS)/hungarian.cpp
 mwis.o:      mwis.c mwis.h color.h color_defs.h
 mwis_grdy.o: mwis_grdy.c color.h graph.h color_defs.h heap.h
 mwis_grb.o:  mwis_grb.c color.h lp.h color_defs.h

@@ -1,14 +1,14 @@
-#include "bleile/header/mmt.h"
+#include "../header/mmt.h"
 
-MMT::MMT(Graph * graph, int L, int T, int timeLimit, int PS, bool set_bounds)
+MMT::MMT(Graph * graph, int L, int T, int timeLimit, int PS, bool set_bounds, int lb)
  : graph(graph), L(L), T(T), timeLimit(timeLimit), PS(PS),
  best_col(EvolPartialCol(graph->n, graph)), N(graph->n)
 
  {
    assert(PS >= 3);
-   std::cout << "N = " << N << '\n';
 
-   logger.UB = N+1;
+   logger.UB = N;
+   logger.LB = 2;
    update_limit = 1000000 / N;
    delta_L = L * graph->dens;
    delta_PS = 1;
@@ -17,17 +17,11 @@ MMT::MMT(Graph * graph, int L, int T, int timeLimit, int PS, bool set_bounds)
 }
 
 void MMT::start(){
-  clock_t t = clock();
   evolInit();
   evolOptimize();
-  if(logger.UB != logger.LB) {
-    // PHASE2_ColumnOptimization();
-  }
   if (best_col.checkColoring()) {
     best_col.toString();
   }
-
-  logger.totTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
 }
 
 void MMT::evolInit(){
@@ -37,10 +31,11 @@ void MMT::evolInit(){
     logger.UB = init.getNumColors();
   };
   std::cout << "Init UB to " << logger.UB << "\n";
+  std::cout << "Init LB to " << logger.LB << "\n";
 }
 
 void MMT::evolOptimize() {
-  // document results for pop effect
+  // document results
   kLogData initKLogData = {logger.UB, 0, INIT_DSATUR};
   logger.kLogData.push_back({logger.UB, 0, INIT_DSATUR});
   // pool : stores the current partial colorings
@@ -51,24 +46,25 @@ void MMT::evolOptimize() {
 
   while (logger.UB > logger.LB) {
     clock_t t = clock();
-    MMT::status res = evolDecision(logger.UB-1, pool);
+    MMT::status res = evolDecision(logger.UB-1, pool, T);
     switch (res) {
       case EA_TIME_OUT:
         return;
       default:
         logger.status = res;
         logger.lastItTimeInSec = ((float) clock() - t)/CLOCKS_PER_SEC;
-        std::cout << "time : " << (float) (clock() - T)/CLOCKS_PER_SEC << '\n';
     }
     logger.UB = best_col.getNumColors();
-    std::cout << "UB updated to " << logger.UB << " with status " << logger.status << "\n";
+    std::cout << "UB updated to " << logger.UB << " with status " << logger.status << " time : " << (float) (clock() - T)/CLOCKS_PER_SEC << '\n';
 
     // document results for pop effect
     logger.kLogData.push_back({logger.UB, (float) (clock() - T)/CLOCKS_PER_SEC, logger.status});
+
+    logger.totTimeInSec = (float) (clock() - T)/CLOCKS_PER_SEC;
   }
 }
 
-MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool) {
+MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool, clock_t t) {
 
   // priority vector : for every vertex keeps track of the total number this
   //                   vertex is left uncolored in the current pool
@@ -100,16 +96,14 @@ MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool) {
   // reset lastItNumOffsprings
   size_t currentItNumOffsprings = 0;
 
-  clock_t t = clock();
   R = N/10;
   int delta_R = R/5;
-  std::cout << "R = " << R << '\n';
   float pGreedy = 0.1;
 
   while (((float) clock() - t)/CLOCKS_PER_SEC < timeLimit) {
     int poolDensityCounter = 0;
 
-    for (size_t iter = 0; iter < update_limit; iter++) {
+    for (size_t iter = 0; iter < update_limit && ((float) clock() - t)/CLOCKS_PER_SEC < timeLimit; iter++) {
 
       EvolPartialCol offspring(k, &graph);
       std::vector<int> distOffspringToPool(PS, 0);
@@ -209,8 +203,7 @@ MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool) {
       logger.totNumOffsprings++;
       currentItNumOffsprings++;
     }
-    std::cout << "update_limit = " << update_limit << " poolDensityCounter = " << poolDensityCounter << '\n';
-    std::cout << "PS = " << PS << " N = " << N << '\n';
+    std::cout << "#num diversification forced : " << poolDensityCounter << '\n';
     if (poolDensityCounter <= update_limit/100 && PS < N/20) {
       for (size_t i = 0; i < delta_PS; i++) {
         EvolPartialCol newIndv = EvolPartialCol(k, &graph);
@@ -230,7 +223,8 @@ MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool) {
       L += delta_L;
     }
 
-    std::cout << "L = " << L << "; "
+    std::cout << "Dynamic parameter changes : "
+              << "L = " << L << "; "
               << "PS = " << PS << "; "
               << "R = " << R
               << '\n';
@@ -401,16 +395,75 @@ void MMT::printPoolFitness(std::vector<EvolPartialCol>& pool){
   std::cout << "|\tbest = " << best << "; average = " << sum / pool.size() << '\n';
 }
 
-int COLORbleile(int ncount, int ecount, int *elist) {
-  std::cout << "hello from c++" << '\n';
+int COLORbleile(int ncount, int ecount, int *elist, int *ncolors,
+                 COLORset **colorclasses, int L, int T, int time_limit, int lb) {
 
-  return 0;
+  std::cout << "LB : " << lb << '\n';
 
-  // Graph g(ncount, ecount, elist);
-  //
-  // MMT mmt(&g, /*L*/ 10000,/*T*/ 45, /*time limit*/ 28000, /*pool size*/ 10, true); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
-  //
-  // mmt.start();
-  //
-  // return mmt.getColoring()->getNumColors();
+  int rval = 0;
+
+  Graph g(ncount, ecount, elist);
+
+  MMT mmt(&g, L, T, time_limit, /*pool size*/ 10, false, lb); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+
+  mmt.start();
+
+  EvolPartialCol* best_col = mmt.getColoring();
+
+  int k, c;
+
+  k = best_col->getNumColors();
+
+  *ncolors = k;
+
+  COLORset *csets = (COLORset *) NULL;
+
+  csets = (COLORset *) malloc (k * sizeof (COLORset));
+
+  for (int i = 0; i < k; i++) {
+   if (&csets[i]) {
+       csets[i].members = (int *) NULL;
+       csets[i].count = 0;
+       csets[i].age   = 0;
+       csets[i].next  = (COLORset*) NULL;
+   }
+  }
+
+  for (int i = 0; i < ncount; i++) {
+   csets[best_col->colors[i]].count++;
+  }
+
+  for (int i = 0; i < k; i++) {
+    csets[i].members = (int *) malloc (csets[i].count * sizeof (int));
+    if (!csets[i].members) {
+       fprintf (stderr, "out of memory for csets members\n");
+       rval = 1; goto CLEANUP;
+    }
+    csets[i].count = 0;
+  }
+
+  for (int i = 0; i < ncount; i++) {
+    c = best_col->colors[i];
+    csets[c].members[csets[c].count] = i;
+    csets[c].count++;
+  }
+
+  *colorclasses = csets;
+
+  CLEANUP:
+
+  if (rval) {
+   if (csets) {
+      for (int i = 0; i < k; i++) {
+        if (&csets[i] && csets[i].members) {
+            free (csets[i].members);
+            csets[i].members = (int *) NULL;
+            csets[i].count = 0;
+        }
+      }
+      free (csets);
+   }
+  }
+
+  return rval;
 }
