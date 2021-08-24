@@ -95,7 +95,7 @@ MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool, clock_t 
 
   // reset lastItNumOffsprings
   size_t currentItNumOffsprings = 0;
-
+  // R = 0;
   R = N/10;
   int delta_R = R/5;
   float pGreedy = 0.1;
@@ -217,7 +217,7 @@ MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool, clock_t 
         PS += delta_PS;
       }
     } else if (poolDensityCounter > update_limit/5) {
-      R -= delta_R;
+      R *= 0.8;
     }
     if (L < 250*N) {
       L += delta_L;
@@ -346,7 +346,7 @@ std::vector<int> MMT::getWorstIndvs(std::vector<EvolPartialCol>& pool, int retur
 }
 
 void MMT::adoptBounds(){
-  std::ifstream bounds_file("bleile/bounds.txt");
+  std::ifstream bounds_file("../bleile/bounds.txt");
   std::string s;
   while(getline(bounds_file, s)) {
     std::stringstream ss(s);

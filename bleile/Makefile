@@ -24,7 +24,7 @@ BLEILE_UTILS=$(BLEILE_DIR)/utils
 CXX=g++
 CXXFLAGS += -std=c++17 -O3
 
-all: approxcolors.a approxcolors
+all: libapproxcolors.a approxcolors
 
 testall:
 	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), echo $(file);)
@@ -33,7 +33,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors ../test/dimacs/C2000.5.col
+	./approxcolors ../test/dimacs/DSJC250.9.col
 
 testdummy:
 	./approxcolors ../test/dimacs/DSJC250.5.col
@@ -46,15 +46,16 @@ clean:
 	rm -f *.o *.a approxcolors
 
 
-approxcolors: approxcolors.a $(BLEILE_DIR)/approxcolors.cpp
+approxcolors: libapproxcolors.a $(BLEILE_DIR)/approxcolors.cpp
 	$(CXX) $(CXXFLAGS) -c $(BLEILE_DIR)/approxcolors.cpp -o approxcolors.o
-	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
+	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o -L. -lapproxcolors
 
+#  mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
 
-approxcolors.a: $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
+libapproxcolors.a: $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
 	$(CXX) $(CXXFLAGS) -c $(BLEILE_UTILS)/hungarian.cpp -o hungarian.o
 	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_graph.cpp -o mmt_graph.o
 	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_partial_coloring.cpp -o mmt_partial_coloring.o
 	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt.cpp -o mmt.o
 	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/c_connector.cpp -o c_connector.o
-	$(AR) rcs approxcolors.a hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o
+	$(AR) rcs libapproxcolors.a hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o

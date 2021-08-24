@@ -73,7 +73,7 @@ export CXX=g++
 
 
 BLEILE_DIR=bleile
-BLEILE_LIB=$(BLEILE_DIR)/approxcolors.a
+BLEILE_LIB=$(BLEILE_DIR)/libapproxcolors.a
 
 SEWELL_DIR=mwis_sewell
 SEWELL_LDFLAG=-L $(SEWELL_DIR) -lsewell
