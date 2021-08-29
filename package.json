@@ -1,0 +1,11 @@
+{
+  "name": "helloworld-pages",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "http-server ."
+  },
+  "dependencies": {
+    "http-server": "^13.0.1"
+  }
+}
