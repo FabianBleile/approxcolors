@@ -33,7 +33,7 @@ testall:
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors ../test/dimacs/DSJC250.9.col
+	./approxcolors ../test/dimacs/flat1000_60_0.col
 
 testdummy:
 	./approxcolors ../test/dimacs/DSJC250.5.col
@@ -52,10 +52,20 @@ approxcolors: libapproxcolors.a $(BLEILE_DIR)/approxcolors.cpp
 
 #  mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
 
-libapproxcolors.a: $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_UTILS)/hungarian.cpp -o hungarian.o
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_graph.cpp -o mmt_graph.o
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_partial_coloring.cpp -o mmt_partial_coloring.o
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt.cpp -o mmt.o
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/c_connector.cpp -o c_connector.o
+libapproxcolors.a: hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o
 	$(AR) rcs libapproxcolors.a hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o
+
+hungarian.o: $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_UTILS)/hungarian.cpp -o hungarian.o
+
+mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_graph.cpp -o mmt_graph.o
+
+mmt_partial_coloring.o: hungarian.o mmt_graph.o $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_partial_coloring.cpp -o mmt_partial_coloring.o
+
+mmt.o: mmt_graph.o mmt_partial_coloring.o $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt.cpp -o mmt.o
+
+c_connector.o: mmt.o mmt_graph.o $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h
+	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/c_connector.cpp -o c_connector.o

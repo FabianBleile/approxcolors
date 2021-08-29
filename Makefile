@@ -113,7 +113,7 @@ scan_build: *.[hc] mwis_sewell/*.[hc]
 	scan-build -v -o clang make -j
 
 testapproxcolors:
-	./color test/dimacs/DSJC250.1.col
+	./color test/dimacs/school1_nsh.col
 
 testmyciel4:
 	./color test/instances/myciel4.col  |grep LB > test/myciel4.con
