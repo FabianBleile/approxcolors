@@ -6,13 +6,13 @@ Graph::Graph(int argc, char **av) {
   std::stringstream filestream;
   filestream << file;
 
-  while(std::getline(filestream, instance, '/')){
+  while(std::getline(filestream, instanceName, '/')){
    // loop for last segment delimited by '/' there instance name sits
   }
 
   int *elist;
 
-  if(!writeToElist(file, &n, &m, &elist))
+  if(!readFromFile(file, &n, &m, &elist))
     std::cout << "Fehler beim Einlesen der Instanz." << '\n';
 
   initFromElist(elist);
@@ -29,11 +29,11 @@ Graph::Graph(int ncount, int ecount, int *elist) {
   initFromElist(elist);
 }
 
-Graph::Graph(Graph * input) {
+Graph::Graph(const Graph * input) {
   n = input->n;
   m = input->m;
   dens = input->dens;
-  instance = input->instance;
+  instanceName = input->instanceName;
   adjList = input->adjList;
 }
 
@@ -48,19 +48,19 @@ void Graph::initFromElist(int *elist){
   dens = (float) m/(n*(n+1)/2);
 }
 
-bool Graph::isAdj(const nodeid u, const nodeid v) const {
+bool Graph::isAdj(nodeid u, nodeid v) const {
   if (!isValidNode(u) || !isValidNode(v) || u == v) {
     return false;
   }
   return std::find(adjList[u].begin(),adjList[u].end(),v) != adjList[u].end();
 }
 
-const std::vector<nodeid>* Graph::getNeighbors(const nodeid u) const {
+const std::vector<nodeid>* Graph::getNeighbors(nodeid u) const {
   assert(isValidNode(u));
   return &adjList[u];
 }
 
-int Graph::getDegree(const nodeid u) const {
+int Graph::getDegree(nodeid u) const {
   assert(isValidNode(u));
   return adjList[u].size();
 }
@@ -85,11 +85,11 @@ void Graph::toString(int maxLines, bool real) const
   }
 }
 
-bool Graph::isValidNode(const nodeid u) const {
+bool Graph::isValidNode(nodeid u) const {
     return u >= 0 && u < n;
 }
 
-bool Graph::writeToElist(char *f, int *pncount, int *pecount, int **pelist) {
+bool Graph::readFromFile(char *f, int *pncount, int *pecount, int **pelist) {
 
     std::ifstream graph_file(f);
 

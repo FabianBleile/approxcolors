@@ -18,30 +18,31 @@ public:
   int n = 0, m = 0;
   float dens;
 
-  std::string instance;
+  std::string instanceName;
 
   Graph(int argc, char **av) ;
 
   Graph(int ncount, int ecount, int *elist) ;
 
-  Graph(Graph * input) ;
+  Graph(const Graph * input) ;
 
-  bool writeToElist(char *f, int *pncount, int *pecount, int **pelist);
+  bool readFromFile(char *filename, int *pncount, int *pecount, int **pelist);
 
   void initFromElist(int *elist);
 
-  bool isAdj(const nodeid u, const nodeid v) const ;
+  bool isAdj(nodeid u, nodeid v) const ;
 
-  const std::vector<nodeid>* getNeighbors(const nodeid u) const ;
+  const std::vector<nodeid>* getNeighbors(nodeid u) const ;
 
-  int getDegree(const nodeid u) const ;
+  int getDegree(nodeid u) const ;
 
   void toString(int maxLines = 5, bool real = true) const ;
 
 private:
   std::vector<std::vector<nodeid> > adjList;
 
-  bool isValidNode(const nodeid u) const;
+  // debugging
+  bool isValidNode(nodeid u) const;
 };
 
 #endif

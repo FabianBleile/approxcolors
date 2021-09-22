@@ -169,7 +169,7 @@ int PartialCol::evaluate() {
 /*
     Migrate PratialCol from k color classes to k_new classes
 */
-void EvolPartialCol::setK(int k_new){
+void EvolPartialCol::migrateColoring(int k_new){
   if (k_new > this->k) {
     std::cout << "requesting to increase k - this functionality is not implemented yet" << '\n';
   } else if (k_new < this->k){

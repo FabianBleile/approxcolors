@@ -15,10 +15,10 @@
 # CXXFLAGS += -g
 #
 
-BLEILE_DIR=.
-BLEILE_HEADER=$(BLEILE_DIR)/header
-BLEILE_SRC=$(BLEILE_DIR)/src
-BLEILE_UTILS=$(BLEILE_DIR)/utils
+MMT_DIR=.
+MMT_HEADER=$(MMT_DIR)/header
+MMT_SRC=$(MMT_DIR)/src
+MMT_UTILS=$(MMT_DIR)/utils
 
 # NOTE: CXXFLAGS are passed here from Makefile in parent directory
 CXX=g++
@@ -46,8 +46,8 @@ clean:
 	rm -f *.o *.a approxcolors
 
 
-approxcolors: libapproxcolors.a $(BLEILE_DIR)/approxcolors.cpp
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_DIR)/approxcolors.cpp -o approxcolors.o
+approxcolors: libapproxcolors.a $(MMT_DIR)/approxcolors.cpp
+	$(CXX) $(CXXFLAGS) -c $(MMT_DIR)/approxcolors.cpp -o approxcolors.o
 	$(CXX) $(CXXFLAGS) -o approxcolors approxcolors.o -L. -lapproxcolors
 
 #  mmt.o mmt_graph.o mmt_partial_coloring.o hungarian.o
@@ -55,17 +55,17 @@ approxcolors: libapproxcolors.a $(BLEILE_DIR)/approxcolors.cpp
 libapproxcolors.a: hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o
 	$(AR) rcs libapproxcolors.a hungarian.o mmt_graph.o mmt_partial_coloring.o mmt.o c_connector.o
 
-hungarian.o: $(BLEILE_UTILS)/hungarian.cpp $(BLEILE_UTILS)/hungarian.h
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_UTILS)/hungarian.cpp -o hungarian.o
+hungarian.o: $(MMT_UTILS)/hungarian.cpp $(MMT_UTILS)/hungarian.h
+	$(CXX) $(CXXFLAGS) -c $(MMT_UTILS)/hungarian.cpp -o hungarian.o
 
-mmt_graph.o: $(BLEILE_SRC)/mmt_graph.cpp $(BLEILE_HEADER)/mmt_graph.h
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_graph.cpp -o mmt_graph.o
+mmt_graph.o: $(MMT_SRC)/mmt_graph.cpp $(MMT_HEADER)/mmt_graph.h
+	$(CXX) $(CXXFLAGS) -c $(MMT_SRC)/mmt_graph.cpp -o mmt_graph.o
 
-mmt_partial_coloring.o: hungarian.o mmt_graph.o $(BLEILE_SRC)/mmt_partial_coloring.cpp $(BLEILE_HEADER)/mmt_partial_coloring.h
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt_partial_coloring.cpp -o mmt_partial_coloring.o
+mmt_partial_coloring.o: hungarian.o mmt_graph.o $(MMT_SRC)/mmt_partial_coloring.cpp $(MMT_HEADER)/mmt_partial_coloring.h
+	$(CXX) $(CXXFLAGS) -c $(MMT_SRC)/mmt_partial_coloring.cpp -o mmt_partial_coloring.o
 
-mmt.o: mmt_graph.o mmt_partial_coloring.o $(BLEILE_SRC)/mmt.cpp $(BLEILE_HEADER)/mmt.h
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/mmt.cpp -o mmt.o
+mmt.o: mmt_graph.o mmt_partial_coloring.o $(MMT_SRC)/mmt.cpp $(MMT_HEADER)/mmt.h
+	$(CXX) $(CXXFLAGS) -c $(MMT_SRC)/mmt.cpp -o mmt.o
 
-c_connector.o: mmt.o mmt_graph.o $(BLEILE_SRC)/c_connector.cpp $(BLEILE_HEADER)/c_connector.h
-	$(CXX) $(CXXFLAGS) -c $(BLEILE_SRC)/c_connector.cpp -o c_connector.o
+c_connector.o: mmt.o mmt_graph.o $(MMT_SRC)/c_connector.cpp $(MMT_HEADER)/c_connector.h
+	$(CXX) $(CXXFLAGS) -c $(MMT_SRC)/c_connector.cpp -o c_connector.o

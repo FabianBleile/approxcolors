@@ -77,7 +77,7 @@ public:
 
   bool tabuSearch(int L, int T);
 
-  void setK(int k);
+  void migrateColoring(int k);
 
   int getOptimalColor(nodeid u, std::vector<std::vector<int>>& tabuList, int it);
 

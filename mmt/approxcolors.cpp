@@ -1,10 +1,10 @@
 #include "header/mmt.h"
 
-void documentation(std::string instance, MMT* mmt, int i, int imax){
+void documentation(std::string instanceName, MMT* mmt, int i, int imax){
   char filename[ ] = "mmt_documentation.txt";
   std::ofstream doc;
   doc.open (filename, std::fstream::app);
-  doc << instance << ','; // << i << '/' << imax <<',';
+  doc << instanceName << ','; // << i << '/' << imax <<',';
   doc << mmt->streamLogs().rdbuf();
   doc.close();
 }
@@ -21,7 +21,7 @@ int main(int argc, char **av) {
 
     mmt.start();
 
-    documentation(g.instance, &mmt, i, 4);
+    documentation(g.instanceName, &mmt, i, 4);
 
     v.push_back(mmt.logger.kLogData);
     v_totTime.push_back(mmt.logger.totTimeInSec);

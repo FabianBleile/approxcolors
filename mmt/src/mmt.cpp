@@ -82,7 +82,7 @@ MMT::status MMT::evolDecision(int k, std::vector<EvolPartialCol>& pool, clock_t 
   } else {
     std::vector<EvolPartialCol> new_pool;
     for (auto& indv : pool) {
-      indv.setK(k);
+      indv.migrateColoring(k);
       if(indv.tabuSearch(L, T)) {
         best_col = indv;
         logger.lastItNumOffsprings = 0;
@@ -346,14 +346,14 @@ std::vector<int> MMT::getWorstIndvs(std::vector<EvolPartialCol>& pool, int retur
 }
 
 void MMT::adoptBounds(){
-  std::ifstream bounds_file("../bleile/bounds.txt");
+  std::ifstream bounds_file("../mmt/bounds.txt");
   std::string s;
   while(getline(bounds_file, s)) {
     std::stringstream ss(s);
-    std::string inst;
+    std::string instanceName;
     int lb, ub, lazylb;
-    ss >> inst >> lb >> ub >> lazylb;
-    if (this->graph.instance == inst) {
+    ss >> instanceName >> lb >> ub >> lazylb;
+    if (this->graph.instanceName == instanceName) {
       // logger.UB = ub;
       // logger.LB = lb;
       logger.LB = lazylb;
