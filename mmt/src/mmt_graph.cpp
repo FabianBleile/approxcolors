@@ -29,12 +29,12 @@ Graph::Graph(int ncount, int ecount, int *elist) {
   initFromElist(elist);
 }
 
-Graph::Graph(const Graph * input) {
-  n = input->n;
-  m = input->m;
-  dens = input->dens;
-  instanceName = input->instanceName;
-  adjList = input->adjList;
+Graph::Graph(const Graph& input) {
+  n = input.n;
+  m = input.m;
+  dens = input.dens;
+  instanceName = input.instanceName;
+  adjList = input.adjList;
 }
 
 void Graph::initFromElist(int *elist){
@@ -55,9 +55,9 @@ bool Graph::isAdj(nodeid u, nodeid v) const {
   return std::find(adjList[u].begin(),adjList[u].end(),v) != adjList[u].end();
 }
 
-const std::vector<nodeid>* Graph::getNeighbors(nodeid u) const {
+const std::vector<nodeid>& Graph::getNeighbors(nodeid u) const {
   assert(isValidNode(u));
-  return &adjList[u];
+  return adjList[u];
 }
 
 int Graph::getDegree(nodeid u) const {

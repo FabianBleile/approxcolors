@@ -1,8 +1,14 @@
+/*
+    the implementation the hybrid evolutionary algorithm MMT by Malaguti,
+    Monaci and Toth arises from Fabian Bleile as part of the bachelor's thesis
+      Randomisierte Algorithmen für Graphenfärbung, University of Bonn, 2021.
+*/
+
 #include "../header/mmt.h"
 
-MMT::MMT(Graph * graph, int L, int T, int timeLimit, int PS, bool set_bounds, int lb)
+MMT::MMT(Graph& graph, int L, int T, int timeLimit, int PS, bool set_bounds, int lb)
  : graph(graph), L(L), T(T), timeLimit(timeLimit), PS(PS),
- best_col(EvolPartialCol(graph->n, graph)), N(graph->n)
+ best_col(EvolPartialCol(graph.n, &graph)), N(graph.n)
 
  {
    assert(PS >= 3);
@@ -10,7 +16,7 @@ MMT::MMT(Graph * graph, int L, int T, int timeLimit, int PS, bool set_bounds, in
    logger.UB = N;
    logger.LB = 2;
    update_limit = 1000000 / N;
-   delta_L = L * graph->dens;
+   delta_L = L * graph.dens;
    delta_PS = 1;
 
    if (set_bounds) adoptBounds();
@@ -404,7 +410,7 @@ int COLORbleile(int ncount, int ecount, int *elist, int *ncolors,
 
   Graph g(ncount, ecount, elist);
 
-  MMT mmt(&g, L, T, time_limit, /*pool size*/ 10, false, lb); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  MMT mmt(g, L, T, time_limit, /*pool size*/ 10, false, lb); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
 
   mmt.start();
 

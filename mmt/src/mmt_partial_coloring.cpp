@@ -120,13 +120,11 @@ void PartialCol::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::ve
   satdegree[u] = -1;
   // get neighbors of u and update sat and freedegree of neighbors
   color u_color = colors[u];
-  const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
-  for (const auto &v : *u_neighbors) {
+  for (const auto &v : graph->getNeighbors(u)) {
     if (satdegree[v] != -1) {
       freedegree[v]--;
       bool new_color = true;
-      const std::vector<nodeid> * v_neighbors = graph->getNeighbors(v);
-      for (const auto &w : *v_neighbors) {
+      for (const auto &w : graph->getNeighbors(v)) {
         if (colors[w] == u_color && w != u) {
           new_color = false;
           break;
@@ -143,9 +141,8 @@ void PartialCol::dsatur_updateDeg(nodeid u, std::vector<int>& satdegree, std::ve
     Given Node u; return minimum color with no conflicting nodes
 */
 int PartialCol::getMinAvailableColor(nodeid u) {
-  const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
   std::vector<bool> colorIsAvailable(k+1,true);
-  for (const auto &v : *u_neighbors) {
+  for (const auto &v : graph->getNeighbors(u)) {
     colorIsAvailable[colors[v]] = false;
   }
   for (size_t i = 0; i < k; i++) { if (colorIsAvailable[i]) return i; }
@@ -210,8 +207,7 @@ void PartialCol::setColor(nodeid u, color c){
 */
 void PartialCol::moveToColor(nodeid u, color c) {
   assert(0 <= c && c <= k);
-  const std::vector<nodeid> * u_neighbors = graph->getNeighbors(u);
-  for (const auto &v : *u_neighbors) {
+  for (const auto &v : graph->getNeighbors(u)) {
     if (colors[v] == c) setColor(v, k);
   }
   setColor(u,c);
@@ -433,7 +429,7 @@ int EvolPartialCol::getOptimalColor(nodeid u, std::vector<std::vector<int>>& tab
   color h = -1;
   int K = graph->n * graph->n;
   std::vector<int> costs(k, -graph->getDegree(u));
-  for (const auto &v : *graph->getNeighbors(u)) {
+  for (const auto &v : graph->getNeighbors(u)) {
     if(colors[v] != k) {
       costs[colors[v]] += graph->getDegree(v);
     }

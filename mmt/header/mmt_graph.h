@@ -24,7 +24,7 @@ public:
 
   Graph(int ncount, int ecount, int *elist) ;
 
-  Graph(const Graph * input) ;
+  Graph(const Graph& input) ;
 
   bool readFromFile(char *filename, int *pncount, int *pecount, int **pelist);
 
@@ -32,7 +32,7 @@ public:
 
   bool isAdj(nodeid u, nodeid v) const ;
 
-  const std::vector<nodeid>* getNeighbors(nodeid u) const ;
+  const std::vector<nodeid>& getNeighbors(nodeid u) const ;
 
   int getDegree(nodeid u) const ;
 
