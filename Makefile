@@ -72,8 +72,8 @@ export CXX=g++
 #
 
 
-BLEILE_DIR=bleile
-BLEILE_LIB=$(BLEILE_DIR)/libapproxcolors.a
+MMT_DIR=mmt
+MMT_LIB=$(MMT_DIR)/libapproxcolors.a
 
 SEWELL_DIR=mwis_sewell
 SEWELL_LDFLAG=-L $(SEWELL_DIR) -lsewell
@@ -134,11 +134,11 @@ test: testmyciel4 testqueen8
 libexactcolor.a: $(OBJFILES)
 	$(AR) rcs libexactcolor.a $(OBJFILES)
 
-color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker $(BLEILE_LIB)
-	$(CXX) $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) $(BLEILE_LIB)
+color: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CBOSSFILES) color_worker $(MMT_LIB)
+	$(CXX) $(CXXFLAGS)  -o color color_main.o $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) $(MMT_LIB)
 
-color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES) $(BLEILE_LIB)
-	$(CXX) $(CXXFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) $(BLEILE_LIB)
+color_worker: $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CWORKERFILES) $(MMT_LIB)
+	$(CXX) $(CXXFLAGS) -o color_worker $(CWORKERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG) $(MMT_LIB)
 
 color_jobkiller:  $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CKILLERFILES)
 	$(CC) $(CFLAGS) -o color_jobkiller $(CKILLERFILES)  $(EXACTCOLOR_LDFLAG) $(SEWELL_LDFLAG)
@@ -146,8 +146,8 @@ color_jobkiller:  $(EXACTCOLOR_LIB) $(SEWELL_LIB) $(CKILLERFILES)
 $(SEWELL_LIB): $(SEWELL_DIR)/*[hc] $(SEWELL_DIR)/Makefile
 	cd $(SEWELL_DIR) && $(MAKE) USE_UBSAN=$(USE_UBSAN)
 
-$(BLEILE_LIB): $(BLEILE_DIR)/*[hc] $(BLEILE_DIR)/Makefile
-	cd $(BLEILE_DIR) && $(MAKE)
+$(MMT_LIB): $(MMT_DIR)/*[hc] $(MMT_DIR)/Makefile
+	cd $(MMT_DIR) && $(MAKE)
 
 stable: $(EXACTCOLOR_LIB) $(STABFILES)
 	$(CC) $(CFLAGS) -o stable $(STABFILES)  $(EXACTCOLOR_LDFLAG)
@@ -186,14 +186,14 @@ clean:
 	rm -rf callgrind*
 	rm -rf mmt.dSYM*
 	cd $(SEWELL_DIR) && $(MAKE) clean
-	cd $(BLEILE_DIR) && $(MAKE) clean_ext
+	cd $(MMT_DIR) && $(MAKE) clean_ext
 
 SRCFILES=bbsafe.c color_backup.c  color.h color_parms.c  graph.c   heap.c     lpgurobi.c  mwis.c       mwis.h                  mwis_sewell/mwss_ext.h  partition.c  queen.c        test_boss.c    util.c bbsafe.h     color.c         color_jobkiller.c  color_parms.h    color_worker.c   graph.h   heap.h     lp.h        mwis_grb.c   mwis_sewell/mwss.c      mwis_sewell/mwss.h      plotting.c   stable.c       test_tell.c cliq_enum.c  color_defs.h    color_main.c       color_private.h  complement.c     greedy.c  lpcplex.c  lpqsopt.c   mwis_grdy.c  mwis_sewell/mwss_ext.c  mwis_sewell/wstable.c   plotting.h   stable_grdy.c  test_worker.c
 
 color_version.h: $(SRCFILES)
 	./create_version_header > color_version.h
 
-color.o:     color_main.c color.c color.h color_private.h lp.h color_defs.h mwis.h plotting.h heap.h bbsafe.h color_version.h bleile/header/c_connector.h
+color.o:     color_main.c color.c color.h color_private.h lp.h color_defs.h mwis.h plotting.h heap.h bbsafe.h color_version.h $(MMT_DIR)/header/c_connector.h
 color_worker.o: color_worker.c color_private.h color_defs.h bbsafe.h
 color_backup.o: color_backup.c color_private.h color_defs.h
 color_parms.o: color_parms.c color_parms.h color_defs.h

@@ -38,7 +38,7 @@
 
 #include "color_private.h"
 
-#include "bleile/header/c_connector.h"
+#include "mmt/header/c_connector.h"
 
 static int debug = 0;
 /* 'double integral_incumbent_tolerance' is used only in an assertion,
