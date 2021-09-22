@@ -27,13 +27,13 @@ CXXFLAGS += -std=c++17 -O3
 all: libapproxcolors.a approxcolors
 
 testall:
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), echo $(file);)
-	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/difficult_subset/*), ./approxcolors $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), echo $(file);)
+	$(foreach file, $(wildcard $(EXACTCOLOR_DIR)/test/dimacs/*), ./approxcolors $(file);)
 
 # best results: http://cedric.cnam.fr/~porumbed/graphs/
 
 testsingle:
-	./approxcolors ../test/dimacs/flat1000_60_0.col
+	./approxcolors ../test/dimacs/flat1000_50_0.col
 
 testdummy:
 	./approxcolors ../test/dimacs/DSJC250.5.col

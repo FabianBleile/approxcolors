@@ -6,7 +6,7 @@
 
 #include "../header/mmt.h"
 
-MMT::MMT(Graph& graph, int L, int T, int timeLimit, int PS, bool set_bounds, int lb)
+MMT::MMT(Graph& graph, int L, int T, int timeLimit, int PS, int lb)
  : graph(graph), L(L), T(T), timeLimit(timeLimit), PS(PS),
  best_col(EvolPartialCol(graph.n, &graph)), N(graph.n)
 
@@ -14,12 +14,10 @@ MMT::MMT(Graph& graph, int L, int T, int timeLimit, int PS, bool set_bounds, int
    assert(PS >= 3);
 
    logger.UB = N;
-   logger.LB = 2;
+   logger.LB = lb;
    update_limit = 1000000 / N;
    delta_L = L * graph.dens;
    delta_PS = 1;
-
-   if (set_bounds) adoptBounds();
 }
 
 void MMT::start(){
@@ -351,25 +349,6 @@ std::vector<int> MMT::getWorstIndvs(std::vector<EvolPartialCol>& pool, int retur
   return res;
 }
 
-void MMT::adoptBounds(){
-  std::ifstream bounds_file("../mmt/bounds.txt");
-  std::string s;
-  while(getline(bounds_file, s)) {
-    std::stringstream ss(s);
-    std::string instanceName;
-    int lb, ub, lazylb;
-    ss >> instanceName >> lb >> ub >> lazylb;
-    if (this->graph.instanceName == instanceName) {
-      // logger.UB = ub;
-      // logger.LB = lb;
-      logger.LB = lazylb;
-      std::cout << "Adopt bounds from file bounds.txt: LB = " << lb << ", UB = " << ub << '\n';
-      break;
-    }
-  }
-  bounds_file.close();
-}
-
 void MMT::printPoolDistance(std::vector<EvolPartialCol>& pool, bool expanded){
   assert(pool.size() != 0);
   std::cout << "pool distances : ";
@@ -410,7 +389,7 @@ int COLORbleile(int ncount, int ecount, int *elist, int *ncolors,
 
   Graph g(ncount, ecount, elist);
 
-  MMT mmt(g, L, T, time_limit, /*pool size*/ 10, false, lb); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
+  MMT mmt(g, L, T, time_limit, /*pool size*/ 10, lb); // Graph * graph, int L, int T, int time_limit_sec, int pool_size = 99, double pGreedy = 0.5
 
   mmt.start();
 

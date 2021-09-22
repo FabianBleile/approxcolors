@@ -62,7 +62,7 @@ public:
     std::vector<kLogData> kLogData;
   };
 
-  MMT(Graph& graph, int L, int T, int time_limit_sec, int pool_size = 10, bool set_bounds = false, int lb = 2);
+  MMT(Graph& graph, int L, int T, int time_limit_sec, int pool_size = 10, int lb = 2);
 
   void start();
 
@@ -96,8 +96,6 @@ private:
   void removePool(int indexRemoveIndv, std::vector<EvolPartialCol>& pool, std::vector<int>& priority);
 
   std::vector<int> getWorstIndvs(std::vector<EvolPartialCol>& pool, int returnSize);
-
-  void adoptBounds();
 
   void printPoolDistance(std::vector<EvolPartialCol>& pool, bool expanded = false);
 
